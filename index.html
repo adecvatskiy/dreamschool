@@ -1,0 +1,528 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Школа Мечты</title>
+    <meta name="description" content="Школа Мечты — современное образовательное пространство для подростков, родителей и педагогов.">
+    <link rel="stylesheet" href="style.css">
+    <script src="theme.js" defer></script>
+</head>
+<body>
+    <input class="theme-toggle" type="radio" name="theme" id="theme-light" checked>
+    <input class="theme-toggle" type="radio" name="theme" id="theme-dark">
+    <input class="theme-toggle" type="radio" name="theme" id="theme-contrast">
+    <div class="page-shell">
+
+        <header class="site-header">
+            <div class="container header-inner">
+                <a class="logo" href="#home" aria-label="Школа Мечты">
+                    <span class="logo-mark">М</span>
+                    <span class="logo-text">Школа Мечты</span>
+                </a>
+
+                <div class="header-controls">
+                    <nav class="page-nav" aria-label="Разделы сайта">
+                        <a href="index.html" aria-current="page">Главная</a>
+                        <a href="index2.html">Новости</a>
+                        <a href="index3.html">Сведения об образовательной организации</a>
+                    </nav>
+
+                    <a class="diary-link" href="https://cabinet.ruobr.ru/login/" target="_blank" rel="noopener noreferrer">Электронный дневник</a>
+
+                    <div class="theme-switcher" aria-label="Переключение темы">
+                        <span class="theme-title">Тема</span>
+                        <div class="theme-options">
+                            <label for="theme-light">Светлая</label>
+                            <label for="theme-dark">Темная</label>
+                            <label for="theme-contrast">Контрастная</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <section class="subnav-section">
+            <div class="container">
+                <div class="subnav-card">
+                    <div class="section-heading align-left subnav-heading">
+                        <p class="eyebrow">Навигация</p>
+                        <h2>Быстрый переход по разделам главной страницы</h2>
+                    </div>
+
+                    <nav class="main-nav" aria-label="Навигация по главной странице">
+                        <a href="#home">Главная</a>
+                        <a href="#programs">Программы</a>
+                        <a href="#lessons">Уроки</a>
+                        <a href="#gallery">Галерея</a>
+                        <a href="#about">О нас</a>
+                        <a href="#contacts">Контакты</a>
+                    </nav>
+                </div>
+            </div>
+        </section>
+
+        <main>
+            <section class="hero" id="home">
+            <div class="container hero-grid">
+                <div class="hero-copy">
+                    <p class="eyebrow">Современная школа для нового поколения</p>
+                    <h1>Школа Мечты: Твое будущее начинается здесь</h1>
+                    <p class="hero-text">
+                        Мы объединяем сильную академическую базу, цифровые навыки, творчество и поддержку наставников,
+                        чтобы каждый ученик уверенно строил собственную траекторию роста.
+                    </p>
+                    <div class="hero-actions">
+                        <a class="btn btn-primary" href="#programs">Выбрать программу</a>
+                        <button class="btn btn-secondary" type="button" data-open-modal>Записаться на экскурсию</button>
+                    </div>
+                    <ul class="hero-stats" aria-label="Преимущества школы">
+                        <li><strong>12+</strong><span>авторских направлений</span></li>
+                        <li><strong>85%</strong><span>уроков с практикой</span></li>
+                        <li><strong>1:1</strong><span>наставничество и поддержка</span></li>
+                    </ul>
+                </div>
+
+                <div class="hero-visual">
+                    <div class="visual-card visual-main">
+                        <span class="visual-label">Проектная неделя</span>
+                        <h2>Учеба, которая вдохновляет действовать</h2>
+                        <p>Командные проекты, публичные выступления, лаборатории и реальные кейсы.</p>
+                    </div>
+                    <div class="visual-stack">
+                        <div class="visual-card visual-mini">
+                            <span class="badge">STEAM</span>
+                            <p>Инженерия, дизайн и цифровые профессии</p>
+                        </div>
+                        <div class="visual-card visual-mini accent">
+                            <span class="badge">Soft Skills</span>
+                            <p>Коммуникация, лидерство и уверенность в себе</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="about section" id="about">
+            <div class="container">
+                <div class="section-heading">
+                    <p class="eyebrow">О школе</p>
+                    <h2>Среда, где знания превращаются в возможности</h2>
+                    <p>
+                        «Школа Мечты» — это пространство, в котором подростки находят интерес к учебе,
+                        родители получают понятный маршрут развития ребенка, а педагоги работают в современной образовательной культуре.
+                    </p>
+                </div>
+
+                <div class="about-grid">
+                    <article class="about-card feature-card">
+                        <h3>Наше уникальное предложение</h3>
+                        <p>
+                            Каждая программа сочетает академические предметы, проектную практику, профориентацию и персональный трек развития.
+                            Ученик не просто изучает темы, а применяет их в реальных задачах и видит результат.
+                        </p>
+                        <ul class="feature-list">
+                            <li>Индивидуальные маршруты обучения</li>
+                            <li>Команды наставников и тьюторов</li>
+                            <li>Гибрид творческих и технологических модулей</li>
+                        </ul>
+                    </article>
+
+                    <div class="about-gallery">
+                        <figure class="photo-card tall">
+                            <img class="photo-image photo-one" src="img/about-teamwork.svg" alt="Ученики на совместной работе">
+                            <figcaption>Совместная работа в проектных командах</figcaption>
+                        </figure>
+                        <figure class="photo-card">
+                            <img class="photo-image photo-two" src="img/about-digital-class.svg" alt="Цифровой класс">
+                            <figcaption>Цифровые классы и интерактивные уроки</figcaption>
+                        </figure>
+                        <figure class="photo-card">
+                            <img class="photo-image photo-three" src="img/about-student-presentation.svg" alt="Выступление ученика">
+                            <figcaption>Презентации, дебаты и уверенность на сцене</figcaption>
+                        </figure>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="programs section" id="programs">
+            <div class="container">
+                <div class="section-heading">
+                    <p class="eyebrow">Программы обучения</p>
+                    <h2>Направления, которые раскрывают сильные стороны</h2>
+                </div>
+
+                <div class="program-grid">
+                    <article class="program-card">
+                        <span class="card-tag">Технологии</span>
+                        <h3>IT и цифровое творчество</h3>
+                        <p>Основы веб-разработки, логика, визуальный дизайн и создание собственных цифровых проектов.</p>
+                    </article>
+                    <article class="program-card">
+                        <span class="card-tag">Коммуникация</span>
+                        <h3>Медиа и публичные выступления</h3>
+                        <p>Сторителлинг, ораторское мастерство, подкасты, видео и работа с современными форматами контента.</p>
+                    </article>
+                    <article class="program-card">
+                        <span class="card-tag">Наука</span>
+                        <h3>STEAM-лаборатория</h3>
+                        <p>Физика, биология, математика и инженерное мышление через эксперименты и исследовательские кейсы.</p>
+                    </article>
+                    <article class="program-card">
+                        <span class="card-tag">Карьера</span>
+                        <h3>Профориентация и лидерство</h3>
+                        <p>Диагностика интересов, проектные роли, командная работа и понимание востребованных профессий.</p>
+                    </article>
+                    <article class="program-card">
+                        <span class="card-tag">Языки</span>
+                        <h3>Английский для будущего</h3>
+                        <p>Разговорная практика, международные темы, презентации и уверенное использование языка в жизни.</p>
+                    </article>
+                    <article class="program-card">
+                        <span class="card-tag">Баланс</span>
+                        <h3>Эмоциональный интеллект</h3>
+                        <p>Навыки саморегуляции, устойчивости, общения и экологичного взаимодействия в учебе и за ее пределами.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="lessons section" id="lessons">
+            <div class="container lessons-grid">
+                <div class="section-heading align-left">
+                    <p class="eyebrow">Уроки и контент</p>
+                    <h2>Модули, которые легко вовлекают в обучение</h2>
+                    <p>
+                        Мы делаем занятия динамичными: короткие смысловые блоки, практика, обсуждения,
+                        визуальные материалы и понятные результаты после каждого модуля.
+                    </p>
+                </div>
+
+                <div class="accordion" aria-label="Примеры учебных модулей">
+                    <details open>
+                        <summary>Модуль «Город будущего»</summary>
+                        <p>Ученики проектируют комфортный городской район: считают ресурсы, создают макеты и презентуют идеи.</p>
+                    </details>
+                    <details>
+                        <summary>Модуль «Медиа-лаборатория»</summary>
+                        <p>От идеи до публикации: сценарий, съемка, монтаж и анализ того, как работает сильная подача материала.</p>
+                    </details>
+                    <details>
+                        <summary>Модуль «Код и интерфейсы»</summary>
+                        <p>Первое знакомство с HTML и CSS, логикой интерфейсов и созданием собственного мини-сайта.</p>
+                    </details>
+                    <details>
+                        <summary>Модуль «Наука без скуки»</summary>
+                        <p>Эксперименты, гипотезы, наблюдение и визуализация результатов в формате мини-исследования.</p>
+                    </details>
+                </div>
+            </div>
+        </section>
+
+        <section class="gallery section" id="gallery">
+            <div class="container">
+                <div class="section-heading">
+                    <p class="eyebrow">Галерея</p>
+                    <h2>Школьная жизнь в ярких моментах</h2>
+                </div>
+
+                <div class="gallery-grid">
+                    <figure class="gallery-item wide">
+                        <img class="photo-image gallery-one" src="img/gallery-school-event.svg" alt="Школьное событие">
+                        <figcaption>Проектные недели и школьные фестивали</figcaption>
+                    </figure>
+                    <figure class="gallery-item">
+                        <img class="photo-image gallery-two" src="img/gallery-modern-class.svg" alt="Современный класс">
+                        <figcaption>Уроки в современном пространстве</figcaption>
+                    </figure>
+                    <figure class="gallery-item">
+                        <img class="photo-image gallery-three" src="img/gallery-teamwork.svg" alt="Командная работа">
+                        <figcaption>Командная работа и поддержка наставников</figcaption>
+                    </figure>
+                    <figure class="gallery-item">
+                        <img class="photo-image gallery-four" src="img/gallery-creativity.svg" alt="Творчество и идеи">
+                        <figcaption>Творческие сессии и генерация идей</figcaption>
+                    </figure>
+                    <figure class="gallery-item wide">
+                        <img class="photo-image gallery-five" src="img/gallery-open-lesson.svg" alt="Открытый урок">
+                        <figcaption>Открытые уроки для родителей и учеников</figcaption>
+                    </figure>
+                </div>
+            </div>
+        </section>
+        </main>
+
+        <div class="modal-backdrop" data-modal hidden>
+            <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="tour-modal-title">
+                <button class="modal-close" type="button" aria-label="Закрыть форму" data-close-modal>×</button>
+                <p class="eyebrow">Запись на экскурсию</p>
+                <h2 id="tour-modal-title">Оставьте заявку, и мы свяжемся с вами</h2>
+                <p class="modal-text">
+                    Укажите имя и номер телефона. После отправки заявка будет сохранена в таблице администратора.
+                </p>
+
+                <form class="tour-form" id="tour-form">
+                    <label class="form-field">
+                        <span>Ваше имя</span>
+                        <input type="text" name="name" placeholder="Например, Анна" required>
+                    </label>
+
+                    <label class="form-field">
+                        <span>Номер телефона</span>
+                        <input type="text" name="phone" inputmode="numeric" pattern="[0-9]*" placeholder="79991234567" required>
+                    </label>
+
+                    <button class="btn btn-primary" type="submit">Отправить заявку</button>
+                    <p class="form-status" id="form-status" aria-live="polite"></p>
+                </form>
+            </div>
+        </div>
+
+        <div class="photo-lightbox" data-lightbox hidden>
+            <div class="photo-lightbox__dialog" role="dialog" aria-modal="true" aria-label="Просмотр фото">
+                <button class="photo-lightbox__close" type="button" aria-label="Закрыть фото" data-close-lightbox>×</button>
+                <img class="photo-lightbox__image" src="" alt="" data-lightbox-image>
+            </div>
+        </div>
+
+        <footer class="site-footer" id="contacts">
+            <div class="container footer-grid">
+                <div>
+                    <a class="logo footer-logo" href="#home">Школа Мечты</a>
+                    <p class="footer-text">
+                        Пространство, где подростки учатся смело, осознанно и с интересом к будущему.
+                    </p>
+                </div>
+
+                <div>
+                    <h3>Контакты</h3>
+                    <ul class="footer-list">
+                        <li>г. Москва, ул. Академическая, 21</li>
+                        <li>+7 (495) 123-45-67</li>
+                        <li>hello@dreamschool.ru</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3>Социальные сети</h3>
+                    <div class="social-links">
+                        <a href="https://vk.com/" aria-label="VK" target="_blank" rel="noopener noreferrer">VK</a>
+                        <a href="https://max.ru/" aria-label="MAX" target="_blank" rel="noopener noreferrer">MAX</a>
+                    </div>
+                </div>
+
+                <div class="map-card footer-map" aria-label="Карта">
+                    <div class="map-embed">
+                        <a href="https://yandex.ru/maps/11291/prokopevsk/?utm_medium=mapframe&utm_source=maps">Прокопьевск</a>
+                        <a href="https://yandex.ru/maps/11291/prokopevsk/house/prospekt_stroiteley_25/bE8YcAVgTUIEQFtpfXR3d3xgZA==/?ll=86.621253%2C53.865942&utm_medium=mapframe&utm_source=maps&z=17.6">Проспект Строителей, 25 — Яндекс Карты</a>
+                        <iframe src="https://yandex.ru/map-widget/v1/?ll=86.621253%2C53.865942&mode=whatshere&whatshere%5Bpoint%5D=86.620582%2C53.865979&whatshere%5Bzoom%5D=17&z=17.6" frameborder="1" allowfullscreen="true"></iframe>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzhkW9MNzmq5qUdtVkwr-THXMLAl3LbYLxfvI6PqvtXjYaL3S22cS-G_2gBFFpFI1pr/exec";
+        const MIN_PHONE_LENGTH = 10;
+        const MODAL_ANIMATION_MS = 280;
+        const LIGHTBOX_ANIMATION_MS = 260;
+
+        const modal = document.querySelector("[data-modal]");
+        const openModalButton = document.querySelector("[data-open-modal]");
+        const closeModalButton = document.querySelector("[data-close-modal]");
+        const form = document.getElementById("tour-form");
+        const formStatus = document.getElementById("form-status");
+        const lightbox = document.querySelector("[data-lightbox]");
+        const lightboxImage = document.querySelector("[data-lightbox-image]");
+        const closeLightboxButton = document.querySelector("[data-close-lightbox]");
+        const photoImages = Array.from(document.querySelectorAll(".photo-image"));
+        let setModalState = () => {};
+        let setLightboxState = () => {};
+
+        const syncBodyLock = () => {
+            const isModalOpen = Boolean(modal && !modal.hidden);
+            const isLightboxOpen = Boolean(lightbox && !lightbox.hidden);
+            document.body.classList.toggle("modal-open", isModalOpen || isLightboxOpen);
+        };
+
+        if (modal && openModalButton && closeModalButton && form && formStatus) {
+            const phoneInput = form.querySelector('input[name="phone"]');
+            const submitButton = form.querySelector('button[type="submit"]');
+            let modalHideTimer = 0;
+
+            const sanitizePhone = (value) => String(value ?? "").replace(/\D/g, "");
+            const setStatus = (message, type = "neutral") => {
+                formStatus.textContent = message;
+                formStatus.classList.remove("is-success", "is-error");
+                if (type === "success") {
+                    formStatus.classList.add("is-success");
+                } else if (type === "error") {
+                    formStatus.classList.add("is-error");
+                }
+            };
+            setModalState = (isOpen) => {
+                window.clearTimeout(modalHideTimer);
+
+                if (isOpen) {
+                    modal.hidden = false;
+                    modal.classList.remove("is-closing");
+                    requestAnimationFrame(() => modal.classList.add("is-visible"));
+                    syncBodyLock();
+
+                    const firstInput = form.querySelector("input");
+                    firstInput?.focus();
+                    return;
+                }
+
+                modal.classList.remove("is-visible");
+                modal.classList.add("is-closing");
+                modalHideTimer = window.setTimeout(() => {
+                    modal.hidden = true;
+                    modal.classList.remove("is-closing");
+                    syncBodyLock();
+                }, MODAL_ANIMATION_MS);
+            };
+
+            openModalButton.addEventListener("click", () => setModalState(true));
+            closeModalButton.addEventListener("click", () => setModalState(false));
+
+            modal.addEventListener("click", (event) => {
+                if (event.target === modal) {
+                    setModalState(false);
+                }
+            });
+
+            phoneInput?.addEventListener("input", () => {
+                phoneInput.value = sanitizePhone(phoneInput.value);
+            });
+
+            form.addEventListener("submit", async (event) => {
+                event.preventDefault();
+
+                if (!phoneInput || !submitButton) {
+                    return;
+                }
+
+                phoneInput.value = sanitizePhone(phoneInput.value);
+
+                const formData = new FormData(form);
+                const payload = {
+                    name: String(formData.get("name") ?? "").trim(),
+                    phone: String(formData.get("phone") ?? "").trim()
+                };
+
+                if (!payload.name || !payload.phone) {
+                    setStatus("Заполните оба поля.", "error");
+                    return;
+                }
+
+                if (payload.phone.length < MIN_PHONE_LENGTH) {
+                    setStatus("Проверьте номер телефона.", "error");
+                    return;
+                }
+
+                if (!APPS_SCRIPT_URL.trim() || APPS_SCRIPT_URL.includes("PASTE_YOUR")) {
+                    setStatus("Укажите адрес веб-приложения Google Apps Script в коде.", "error");
+                    return;
+                }
+
+                submitButton.disabled = true;
+                setStatus("Отправляем заявку...");
+
+                try {
+                    const body = new URLSearchParams(payload).toString();
+
+                    await fetch(APPS_SCRIPT_URL, {
+                        method: "POST",
+                        mode: "no-cors",
+                        headers: {
+                            "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
+                        },
+                        body
+                    });
+
+                    form.reset();
+                    setStatus("Заявка отправлена. Мы скоро свяжемся с вами.", "success");
+                } catch (error) {
+                    setStatus("Ошибка отправки. Проверьте настройки Apps Script и повторите попытку.", "error");
+                } finally {
+                    submitButton.disabled = false;
+                }
+            });
+        }
+
+        if (lightbox && lightboxImage && closeLightboxButton && photoImages.length > 0) {
+            let lightboxHideTimer = 0;
+
+            setLightboxState = (isOpen, image) => {
+                window.clearTimeout(lightboxHideTimer);
+
+                if (isOpen && image) {
+                    lightboxImage.src = image.src;
+                    lightboxImage.alt = image.alt || "Увеличенное изображение";
+                    lightbox.hidden = false;
+                    lightbox.classList.remove("is-closing");
+                    requestAnimationFrame(() => lightbox.classList.add("is-visible"));
+                    syncBodyLock();
+                    return;
+                }
+
+                lightbox.classList.remove("is-visible");
+                lightbox.classList.add("is-closing");
+                lightboxHideTimer = window.setTimeout(() => {
+                    lightbox.hidden = true;
+                    lightbox.classList.remove("is-closing");
+                    lightboxImage.src = "";
+                    lightboxImage.alt = "";
+                    syncBodyLock();
+                }, LIGHTBOX_ANIMATION_MS);
+            };
+
+            photoImages.forEach((image) => {
+                image.classList.add("is-zoomable");
+                image.tabIndex = 0;
+                image.setAttribute("role", "button");
+                image.setAttribute("aria-label", `Открыть фото: ${image.alt || "изображение"}`);
+
+                image.addEventListener("click", () => setLightboxState(true, image));
+                image.addEventListener("keydown", (event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setLightboxState(true, image);
+                    }
+                });
+            });
+
+            closeLightboxButton.addEventListener("click", () => setLightboxState(false));
+            lightbox.addEventListener("click", (event) => {
+                if (event.target === lightbox) {
+                    setLightboxState(false);
+                }
+            });
+        }
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key !== "Escape") {
+                return;
+            }
+
+            if (lightbox && !lightbox.hidden) {
+                setLightboxState(false);
+                return;
+            }
+
+            if (modal && !modal.hidden) {
+                setModalState(false);
+            }
+        });
+
+    </script>
+</body>
+</html>
+
+
+
+
+

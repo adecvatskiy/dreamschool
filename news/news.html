@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Новость | Школа Мечты</title>
+    <meta name="description" content="Подробная страница новости школы.">
+    <link rel="stylesheet" href="../style.css">
+    <script src="../theme.js" defer></script>
+</head>
+<body>
+    <input class="theme-toggle" type="radio" name="theme" id="theme-light" checked>
+    <input class="theme-toggle" type="radio" name="theme" id="theme-dark">
+    <input class="theme-toggle" type="radio" name="theme" id="theme-contrast">
+
+    <div class="page-shell">
+        <header class="site-header">
+            <div class="container header-inner">
+                <a class="logo" href="../index.html" aria-label="Школа Мечты">
+                    <span class="logo-mark">М</span>
+                    <span class="logo-text">Школа Мечты</span>
+                </a>
+
+                <div class="header-controls">
+                    <nav class="page-nav" aria-label="Разделы сайта">
+                        <a href="../index.html">Главная</a>
+                        <a href="../index2.html" aria-current="page">Новости</a>
+                        <a href="../index3.html">Сведения об образовательной организации</a>
+                    </nav>
+
+                    <a class="diary-link" href="https://cabinet.ruobr.ru/login/" target="_blank" rel="noopener noreferrer">Электронный дневник</a>
+
+                    <div class="theme-switcher" aria-label="Переключение темы">
+                        <span class="theme-title">Тема</span>
+                        <div class="theme-options">
+                            <label for="theme-light">Светлая</label>
+                            <label for="theme-dark">Темная</label>
+                            <label for="theme-contrast">Контрастная</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="news-detail-page">
+            <section class="section">
+                <div class="container">
+                    <a href="../index2.html" class="news-back-link" aria-label="К списку новостей" title="К списку новостей">&larr;</a>
+
+                    <article class="article-wrap" id="news-content">
+                        <p class="article-state loading-dots">Загружаем новость</p>
+                    </article>
+                </div>
+            </section>
+        </main>
+
+        <footer class="site-footer">
+            <div class="container footer-grid">
+                <div>
+                    <a class="logo footer-logo" href="../index.html">Школа Мечты</a>
+                    <p class="footer-text">
+                        Современная школьная среда, в которой новости отражают реальную жизнь, достижения и рост учеников.
+                    </p>
+                </div>
+
+                <div>
+                    <h3>Контакты</h3>
+                    <ul class="footer-list">
+                        <li>г. Прокопьевск, проспект Строителей, 25</li>
+                        <li>+7 (3846) 00-00-00</li>
+                        <li>school@example.ru</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3>Социальные сети</h3>
+                    <div class="social-links">
+                        <a href="https://vk.com/" aria-label="VK" target="_blank" rel="noopener noreferrer">VK</a>
+                        <a href="https://max.ru/" aria-label="MAX" target="_blank" rel="noopener noreferrer">MAX</a>
+                    </div>
+                </div>
+
+                <div class="map-card footer-map" aria-label="Карта">
+                    <div class="map-embed">
+                        <a href="https://yandex.ru/maps/11291/prokopevsk/?utm_medium=mapframe&utm_source=maps">Прокопьевск</a>
+                        <a href="https://yandex.ru/maps/11291/prokopevsk/house/prospekt_stroiteley_25/bE8YcAVgTUIEQFtpfXR3d3xgZA==/?ll=86.621253%2C53.865942&utm_medium=mapframe&utm_source=maps&z=17.6">Проспект Строителей, 25 — Яндекс Карты</a>
+                        <iframe src="https://yandex.ru/map-widget/v1/?ll=86.621253%2C53.865942&mode=whatshere&whatshere%5Bpoint%5D=86.620582%2C53.865979&whatshere%5Bzoom%5D=17&z=17.6" frameborder="1" allowfullscreen="true"></iframe>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbzEFYElv0PCWbVV-pu9kjB3YbyOMtaQaXd7HRvJRYqHQFj_xvPTi6BU2wpDDRDwjdpC3w/exec";
+        const REQUEST_TIMEOUT_MS = 10000;
+        const IMAGE_LINK_REGEX = /(https?:\/\/[^\s<>"']+)/gi;
+        const IMAGE_EXT_REGEX = /\.(?:png|jpe?g|gif|webp|svg)(?:[?#][^\s]*)?$/i;
+
+        const params = new URLSearchParams(window.location.search);
+        const newsId = Number.parseInt(params.get("id"), 10);
+        const contentArea = document.getElementById("news-content");
+
+        function escapeHtml(value) {
+            return String(value ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function normalizeUrl(url) {
+            const trimmed = String(url ?? "").trim();
+            return trimmed || "";
+        }
+
+        function getDriveFileId(url) {
+            try {
+                const parsed = new URL(url);
+                if (!parsed.hostname.toLowerCase().includes("google")) return "";
+                const pathMatch = parsed.pathname.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+                if (pathMatch) return pathMatch[1];
+                return parsed.searchParams.get("id") || "";
+            } catch {
+                return "";
+            }
+        }
+
+        function normalizeImageUrl(url) {
+            const normalized = normalizeUrl(url);
+            if (!normalized) return "";
+
+            const driveFileId = getDriveFileId(normalized);
+            if (driveFileId) {
+                return `https://drive.google.com/uc?export=view&id=${encodeURIComponent(driveFileId)}`;
+            }
+            return normalized;
+        }
+
+        function isLikelyImageUrl(url) {
+            const normalized = normalizeUrl(url);
+            if (!normalized) return false;
+            if (IMAGE_EXT_REGEX.test(normalized)) return true;
+            return Boolean(getDriveFileId(normalized));
+        }
+
+        function formatDate(dateValue) {
+            const date = new Date(dateValue);
+            if (!Number.isNaN(date.getTime())) {
+                return date.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" });
+            }
+            return String(dateValue || "Дата не указана").trim();
+        }
+
+        function buildArticleBody(rawText) {
+            const text = String(rawText ?? "");
+            let result = "";
+            let lastIndex = 0;
+            let match;
+
+            while ((match = IMAGE_LINK_REGEX.exec(text)) !== null) {
+                const rawUrl = match[0];
+                const matchIndex = match.index;
+                const before = text.slice(lastIndex, matchIndex);
+                result += escapeHtml(before);
+
+                if (isLikelyImageUrl(rawUrl)) {
+                    const imageUrl = normalizeImageUrl(rawUrl);
+                    result += `<img src="${escapeHtml(imageUrl)}" class="article-inline-img" alt="Изображение к новости" loading="lazy">`;
+                } else {
+                    result += escapeHtml(rawUrl);
+                }
+
+                lastIndex = matchIndex + rawUrl.length;
+            }
+
+            result += escapeHtml(text.slice(lastIndex));
+            return result.replace(/\r?\n/g, "<br>");
+        }
+
+        function renderState(message) {
+            contentArea.innerHTML = `<p class="article-state">${escapeHtml(message)}</p>`;
+        }
+
+        function render(items) {
+            if (!Number.isInteger(newsId) || newsId < 0) {
+                renderState("Некорректный номер новости.");
+                return;
+            }
+
+            if (!Array.isArray(items) || !items[newsId]) {
+                renderState("Новость не найдена.");
+                return;
+            }
+
+            const item = items[newsId] || {};
+            const title = String(item.title || item["Заголовок"] || "Без названия").trim();
+            const dateText = formatDate(item.date || item["Дата"] || "");
+            const bodySource = item.content || item.preview || item["Текст"] || "";
+            const bodyHtml = buildArticleBody(bodySource);
+
+            contentArea.innerHTML = `
+                <header class="article-header">
+                    <span class="article-date">${escapeHtml(dateText)}</span>
+                    <h1 class="article-title">${escapeHtml(title)}</h1>
+                </header>
+                <div class="article-body">${bodyHtml}</div>
+            `;
+
+            document.title = `${title} | Школа Мечты`;
+        }
+
+        function loadNews() {
+            const callbackName = `newsDetailCallback_${Date.now()}`;
+            const script = document.createElement("script");
+            let settled = false;
+
+            const cleanup = () => {
+                delete window[callbackName];
+                script.remove();
+            };
+
+            const timeoutId = window.setTimeout(() => {
+                if (settled) return;
+                settled = true;
+                renderState("Не удалось загрузить новость. Проверьте подключение и обновите страницу.");
+                cleanup();
+            }, REQUEST_TIMEOUT_MS);
+
+            window[callbackName] = (data) => {
+                if (settled) return;
+                settled = true;
+                window.clearTimeout(timeoutId);
+                render(data);
+                cleanup();
+            };
+
+            script.onerror = () => {
+                if (settled) return;
+                settled = true;
+                window.clearTimeout(timeoutId);
+                renderState("Ошибка загрузки данных. Попробуйте позже.");
+                cleanup();
+            };
+
+            script.src = `${API_URL}?callback=${callbackName}&_=${Date.now()}`;
+            document.body.appendChild(script);
+        }
+
+        loadNews();
+    </script>
+</body>
+</html>

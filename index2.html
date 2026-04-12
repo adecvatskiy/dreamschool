@@ -1,0 +1,429 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Школа Мечты | Новости</title>
+    <meta name="description" content="Новости Школы Мечты: события, достижения учеников, анонсы программ и школьной жизни.">
+    <link rel="stylesheet" href="style.css">
+    <script src="theme.js" defer></script>
+</head>
+<body>
+    <input class="theme-toggle" type="radio" name="theme" id="theme-light" checked>
+    <input class="theme-toggle" type="radio" name="theme" id="theme-dark">
+    <input class="theme-toggle" type="radio" name="theme" id="theme-contrast">
+
+    <div class="page-shell">
+        <header class="site-header">
+            <div class="container header-inner">
+                <a class="logo" href="index.html" aria-label="Школа Мечты">
+                    <span class="logo-mark">М</span>
+                    <span class="logo-text">Школа Мечты</span>
+                </a>
+
+                <div class="header-controls">
+                    <nav class="page-nav" aria-label="Разделы сайта">
+                        <a href="index.html">Главная</a>
+                        <a href="index2.html" aria-current="page">Новости</a>
+                        <a href="index3.html">Сведения об образовательной организации</a>
+                    </nav>
+
+                    <a class="diary-link" href="https://cabinet.ruobr.ru/login/" target="_blank" rel="noopener noreferrer">Электронный дневник</a>
+
+                    <div class="theme-switcher" aria-label="Переключение темы">
+                        <span class="theme-title">Тема</span>
+                        <div class="theme-options">
+                            <label for="theme-light">Светлая</label>
+                            <label for="theme-dark">Темная</label>
+                            <label for="theme-contrast">Контрастная</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="news-page">
+            <section class="section">
+                <div class="container">
+                    <div class="news-hero">
+                        <div class="news-hero-copy">
+                            <p class="eyebrow">Новости школы</p>
+                            <h1>События, достижения и жизнь «Школы Мечты»</h1>
+                            <p>
+                                Здесь публикуются важные объявления, анонсы мероприятий, победы учеников,
+                                изменения в расписании событий и главные новости школьного сообщества.
+                            </p>
+                        </div>
+
+                        <aside class="news-hero-panel">
+                            <span class="news-panel-label" id="hero-news-label">Сейчас в центре внимания</span>
+                            <h2 id="hero-news-title" class="loading-dots">Загрузка новости</h2>
+                            <p id="hero-news-preview" class="loading-dots">Получаем данные</p>
+                            <a class="btn btn-primary" id="hero-news-link" href="#news-list">Смотреть новости</a>
+                        </aside>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section news-section" id="news-list">
+                <div class="container news-layout">
+                    <div class="news-filters-wrap" id="news-filters-wrap" hidden>
+                        <p class="news-filters-title">Фильтр по категориям</p>
+                        <div class="news-filters" id="news-filters" aria-label="Фильтр новостей по категориям"></div>
+                    </div>
+
+                    <div class="news-stream" id="news-stream">
+                        <article class="news-state-card">
+                            <p class="loading-dots">Загрузка новостей</p>
+                        </article>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="site-footer">
+            <div class="container footer-grid">
+                <div>
+                    <a class="logo footer-logo" href="index.html">Школа Мечты</a>
+                    <p class="footer-text">
+                        Современная школьная среда, в которой новости отражают реальную жизнь, достижения и рост учеников.
+                    </p>
+                </div>
+
+                <div>
+                    <h3>Контакты</h3>
+                    <ul class="footer-list">
+                        <li>г. Прокопьевск, проспект Строителей, 25</li>
+                        <li>+7 (3846) 00-00-00</li>
+                        <li>school@example.ru</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3>Социальные сети</h3>
+                    <div class="social-links">
+                        <a href="https://vk.com/" aria-label="VK" target="_blank" rel="noopener noreferrer">VK</a>
+                        <a href="https://max.ru/" aria-label="MAX" target="_blank" rel="noopener noreferrer">MAX</a>
+                    </div>
+                </div>
+
+                <div class="map-card footer-map" aria-label="Карта">
+                    <div class="map-embed">
+                        <a href="https://yandex.ru/maps/11291/prokopevsk/?utm_medium=mapframe&utm_source=maps">Прокопьевск</a>
+                        <a href="https://yandex.ru/maps/11291/prokopevsk/house/prospekt_stroiteley_25/bE8YcAVgTUIEQFtpfXR3d3xgZA==/?ll=86.621253%2C53.865942&utm_medium=mapframe&utm_source=maps&z=17.6">Проспект Строителей, 25 — Яндекс Карты</a>
+                        <iframe src="https://yandex.ru/map-widget/v1/?ll=86.621253%2C53.865942&mode=whatshere&whatshere%5Bpoint%5D=86.620582%2C53.865979&whatshere%5Bzoom%5D=17&z=17.6" frameborder="1" allowfullscreen="true"></iframe>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Идеальное восстановление позиции скролла
+        window.addEventListener('pageshow', () => {
+            const scrollPos = sessionStorage.getItem('newsScrollPosition');
+            if (scrollPos) {
+                // Небольшая задержка, чтобы контент успел отрендериться перед скроллом
+                const top = Number.parseInt(scrollPos, 10);
+                if (!Number.isNaN(top)) {
+                    setTimeout(() => window.scrollTo({ top, behavior: 'auto' }), 50);
+                }
+            }
+        });
+
+        // Сохранение позиции перед переходом
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.news-link') || e.target.closest('#hero-news-link')) {
+                sessionStorage.setItem('newsScrollPosition', window.scrollY);
+            }
+        });
+
+        const NEWS_API_URL = "https://script.google.com/macros/s/AKfycbzEFYElv0PCWbVV-pu9kjB3YbyOMtaQaXd7HRvJRYqHQFj_xvPTi6BU2wpDDRDwjdpC3w/exec";
+        const CARD_PREVIEW_LIMIT = 150;
+        const HERO_PREVIEW_LIMIT = 110;
+
+        const newsStream = document.getElementById("news-stream");
+        const newsFiltersWrap = document.getElementById("news-filters-wrap");
+        const newsFilters = document.getElementById("news-filters");
+        const heroNewsTitle = document.getElementById("hero-news-title");
+        const heroNewsPreview = document.getElementById("hero-news-preview");
+        const heroNewsLink = document.getElementById("hero-news-link");
+        
+        let currentRequestId = 0;
+        let allNewsRecords = [];
+        const selectedCategories = new Set();
+
+        function escapeHtml(value) {
+            return String(value ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/\"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function splitDate(dateValue) {
+            if (!dateValue) return { day: "", rest: "" };
+            const date = new Date(dateValue);
+            if (!Number.isNaN(date.getTime())) {
+                const day = String(date.getDate()).padStart(2, "0");
+                const rest = date.toLocaleDateString("ru-RU", { month: "long", year: "numeric" });
+                return { day, rest };
+            }
+            const parts = String(dateValue).trim().split(/\s+/);
+            return { day: parts.shift() || "", rest: parts.join(" ") || "" };
+        }
+
+        function normalizeUrl(url) {
+            const text = String(url || "").trim();
+            return (!text || text === "#") ? "#" : text;
+        }
+
+        function normalizeCategory(value) {
+            const text = String(value ?? "").replace(/\s+/g, " ").trim();
+            return text || "Без категории";
+        }
+
+        function getDriveFileId(url) {
+            const text = String(url ?? "").trim();
+            if (!text) return "";
+            try {
+                const parsedUrl = new URL(text);
+                if (!parsedUrl.hostname.toLowerCase().endsWith("google.com")) return "";
+                const fileMatch = parsedUrl.pathname.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+                if (fileMatch) return fileMatch[1];
+                return parsedUrl.searchParams.get("id") || "";
+            } catch { return ""; }
+        }
+
+        function normalizeImageUrl(url) {
+            const normalized = normalizeUrl(url);
+            if (normalized === "#") return "";
+            const driveFileId = getDriveFileId(normalized);
+            if (driveFileId) return `https://drive.google.com/uc?export=view&id=${encodeURIComponent(driveFileId)}`;
+            return normalized;
+        }
+
+        function getNewsImageInfo(item) {
+            const data = item && typeof item === "object" ? item : {};
+            const directFields = [data.image, data.imageUrl, data.photo, data.cover].map(v => String(v ?? "").trim()).filter(Boolean);
+            for (const value of directFields) {
+                const imageUrl = normalizeImageUrl(value);
+                if (imageUrl) return { src: imageUrl, sourceUrl: value };
+            }
+            return { src: "", sourceUrl: "" };
+        }
+
+        function renderState(message) {
+            newsStream.innerHTML = `<article class="news-state-card"><p>${escapeHtml(message)}</p></article>`;
+        }
+
+        function getTopCategories(records, maxCount = 5) {
+            const counters = new Map();
+            records.forEach((record) => {
+                const key = record.category;
+                counters.set(key, (counters.get(key) || 0) + 1);
+            });
+
+            return Array.from(counters.entries())
+                .sort((a, b) => (b[1] - a[1]) || a[0].localeCompare(b[0], "ru"))
+                .slice(0, maxCount)
+                .map(([name]) => name);
+        }
+
+        function renderFilters() {
+            if (!newsFiltersWrap || !newsFilters) return;
+            const categories = getTopCategories(allNewsRecords);
+
+            if (categories.length === 0) {
+                newsFiltersWrap.hidden = true;
+                newsFilters.innerHTML = "";
+                return;
+            }
+
+            newsFiltersWrap.hidden = false;
+            const allActive = selectedCategories.size === 0;
+            const filterButtons = categories.map((category) => {
+                const activeClass = selectedCategories.has(category) ? "is-active" : "";
+                return `<button class="news-filter ${activeClass}" type="button" data-filter-category="${escapeHtml(category)}">${escapeHtml(category)}</button>`;
+            }).join("");
+
+            newsFilters.innerHTML = `
+                <button class="news-filter ${allActive ? "is-active" : ""}" type="button" data-filter-all="1">Все новости</button>
+                ${filterButtons}
+            `;
+        }
+
+        function renderHeroNews(item, index) {
+            heroNewsTitle.classList.remove("loading-dots");
+            heroNewsPreview.classList.remove("loading-dots");
+
+            if (!item) {
+                heroNewsTitle.textContent = "Новость скоро появится";
+                heroNewsPreview.textContent = "Как только в таблице появятся данные, этот блок заполнится.";
+                heroNewsLink.href = "#news-list";
+                return;
+            }
+
+            heroNewsTitle.textContent = String(item.title || "Новость без заголовка").trim();
+            const plainText = new DOMParser().parseFromString(item.preview || item.content || "", "text/html").body.textContent;
+            heroNewsPreview.textContent = (plainText.slice(0, HERO_PREVIEW_LIMIT) + (plainText.length > HERO_PREVIEW_LIMIT ? "..." : "")) || "Нет описания.";
+            
+            // Ссылка ведет на наш умный шаблон в папке news
+            heroNewsLink.href = `news/news.html?id=${index}`;
+            heroNewsLink.textContent = "Читать подробнее";
+            heroNewsLink.removeAttribute("target");
+        }
+
+        function renderNewsList(records) {
+            newsStream.innerHTML = records.map((record) => {
+                const data = record.item || {};
+                const date = splitDate(data.date);
+                const category = escapeHtml(record.category);
+                const title = escapeHtml(data.title);
+                const imageInfo = getNewsImageInfo(data);
+                
+                const plainText = new DOMParser().parseFromString(data.preview || data.content || "", "text/html").body.textContent.replace(/\s+/g, " ").trim();
+                const shortPreview = plainText.length > CARD_PREVIEW_LIMIT ? plainText.slice(0, CARD_PREVIEW_LIMIT) + "..." : plainText;
+
+                const imageBlock = imageInfo.src ? `<div class="news-image-wrap"><img class="news-image" src="${escapeHtml(imageInfo.src)}" alt="Изображение к новости" loading="lazy"></div>` : "";
+                const articleUrl = `news/news.html?id=${record.index}`;
+
+                return `
+                    <article class="news-item ${data.featured ? "news-item-featured" : ""}">
+                        <div class="news-item-date">
+                            <strong>${escapeHtml(date.day)}</strong>
+                            <span>${escapeHtml(date.rest)}</span>
+                        </div>
+                        <div class="news-item-content">
+                            <div class="news-meta">
+                                <span class="card-tag">${category}</span>
+                            </div>
+                            <h2>${title}</h2>
+                            ${imageBlock}
+                            <div class="news-preview">${escapeHtml(shortPreview)}</div>
+                            <div class="news-actions">
+                                <a class="news-link" href="${articleUrl}">Читать подробнее</a>
+                            </div>
+                        </div>
+                    </article>
+                `;
+            }).join("");
+        }
+
+        function applyNewsFilters() {
+            const filteredRecords = selectedCategories.size === 0
+                ? allNewsRecords
+                : allNewsRecords.filter((record) => selectedCategories.has(record.category));
+
+            if (filteredRecords.length === 0) {
+                renderHeroNews(null, 0);
+                renderState("По выбранным категориям новостей не найдено.");
+                return;
+            }
+
+            renderHeroNews(filteredRecords[0].item, filteredRecords[0].index);
+            renderNewsList(filteredRecords);
+        }
+
+        function renderNews(items) {
+            if (!Array.isArray(items) || items.length === 0) {
+                renderHeroNews(null, 0);
+                renderState("Новости пока не опубликованы.");
+                allNewsRecords = [];
+                if (newsFiltersWrap) {
+                    newsFiltersWrap.hidden = true;
+                }
+                return;
+            }
+
+            allNewsRecords = items.map((item, index) => ({
+                item: item || {},
+                index,
+                category: normalizeCategory(item?.category)
+            }));
+
+            const allowedCategories = new Set(getTopCategories(allNewsRecords));
+            Array.from(selectedCategories).forEach((category) => {
+                if (!allowedCategories.has(category)) {
+                    selectedCategories.delete(category);
+                }
+            });
+
+            renderFilters();
+            applyNewsFilters();
+        }
+
+        if (newsFilters) {
+            newsFilters.addEventListener("click", (event) => {
+                const allButton = event.target.closest("[data-filter-all]");
+                if (allButton) {
+                    selectedCategories.clear();
+                    renderFilters();
+                    applyNewsFilters();
+                    return;
+                }
+
+                const categoryButton = event.target.closest("[data-filter-category]");
+                if (!categoryButton) return;
+
+                const category = categoryButton.getAttribute("data-filter-category");
+                if (!category) return;
+
+                if (selectedCategories.has(category)) {
+                    selectedCategories.delete(category);
+                } else {
+                    selectedCategories.add(category);
+                }
+
+                renderFilters();
+                applyNewsFilters();
+            });
+        }
+
+        function loadNews() {
+            heroNewsTitle.classList.add("loading-dots");
+            heroNewsPreview.classList.add("loading-dots");
+            
+            const requestId = ++currentRequestId;
+            const callbackName = `newsCallback_${requestId}_${Date.now()}`;
+            const script = document.createElement("script");
+            let settled = false;
+
+            const finish = () => {
+                delete window[callbackName];
+                script.remove();
+            };
+
+            const timeoutId = window.setTimeout(() => {
+                if (settled || requestId !== currentRequestId) return;
+                settled = true;
+                renderHeroNews(null, 0);
+                renderState("Не удалось загрузить новости. Проверьте подключение и обновите страницу.");
+                finish();
+            }, 10000);
+
+            window[callbackName] = function(items) {
+                if (settled) return;
+                settled = true;
+                window.clearTimeout(timeoutId);
+                if (requestId === currentRequestId) renderNews(items);
+                finish();
+            };
+
+            script.onerror = () => {
+                if (settled || requestId !== currentRequestId) return;
+                settled = true;
+                window.clearTimeout(timeoutId);
+                renderHeroNews(null, 0);
+                renderState("Ошибка загрузки новостей. Попробуйте обновить страницу позже.");
+                finish();
+            };
+            script.src = `${NEWS_API_URL}?callback=${callbackName}&_=${Date.now()}`;
+            document.body.appendChild(script);
+        }
+
+        loadNews();
+    </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+﻿about-teamwork.svg
+about-digital-class.svg
+about-student-presentation.svg
+gallery-school-event.svg
+gallery-modern-class.svg
+gallery-teamwork.svg
+gallery-creativity.svg
+gallery-open-lesson.svg
+education-classroom.svg
+education-lab.svg
+education-project-space.svg
