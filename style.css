@@ -2623,3 +2623,20 @@ h1, h2, h3, .logo-text {
         grid-template-columns: 1fr;
     }
 }
+
+/* Стили для контрастной темы */
+body.contrast .header-top a,
+body.contrast header a {
+    color: #000 !important; /* Черный цвет текста для максимального контраста */
+    background-color: #fff;  /* Белый фон, если нужно */
+    border: 2px solid #000; /* Добавляем рамку для лучшей видимости, типично для контрастных тем */
+    padding: 5px 10px;
+    text-decoration: underline; /* Подчеркивание для доступности */
+}
+
+/* Состояние при наведении в контрастной теме */
+body.contrast .header-top a:hover,
+body.contrast header a:hover {
+    color: #fff !important;
+    background-color: #000 !important;
+}
