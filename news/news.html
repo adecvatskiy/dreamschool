@@ -55,6 +55,13 @@
             </section>
         </main>
 
+        <div class="photo-lightbox" data-lightbox hidden>
+            <div class="photo-lightbox__dialog" role="dialog" aria-modal="true" aria-label="Просмотр фото">
+                <button class="photo-lightbox__close" type="button" aria-label="Закрыть фото" data-close-lightbox>×</button>
+                <img class="photo-lightbox__image" src="" alt="" data-lightbox-image>
+            </div>
+        </div>
+
         <footer class="site-footer">
             <div class="container footer-grid">
                 <div>
@@ -101,6 +108,57 @@
         const params = new URLSearchParams(window.location.search);
         const newsId = Number.parseInt(params.get("id"), 10);
         const contentArea = document.getElementById("news-content");
+
+        // --- Логика Лайтбокса ---
+        const LIGHTBOX_ANIMATION_MS = 260;
+        const lightbox = document.querySelector("[data-lightbox]");
+        const lightboxImage = document.querySelector("[data-lightbox-image]");
+        const closeLightboxButton = document.querySelector("[data-close-lightbox]");
+        let lightboxHideTimer = 0;
+
+        const syncBodyLock = () => {
+            const isLightboxOpen = Boolean(lightbox && !lightbox.hidden);
+            document.body.classList.toggle("modal-open", isLightboxOpen);
+        };
+
+        const setLightboxState = (isOpen, image = null) => {
+            window.clearTimeout(lightboxHideTimer);
+
+            if (isOpen && image) {
+                lightboxImage.src = image.src;
+                lightboxImage.alt = image.alt || "Увеличенное изображение";
+                lightbox.hidden = false;
+                lightbox.classList.remove("is-closing");
+                requestAnimationFrame(() => lightbox.classList.add("is-visible"));
+                syncBodyLock();
+                return;
+            }
+
+            lightbox.classList.remove("is-visible");
+            lightbox.classList.add("is-closing");
+            lightboxHideTimer = window.setTimeout(() => {
+                lightbox.hidden = true;
+                lightbox.classList.remove("is-closing");
+                lightboxImage.src = "";
+                lightboxImage.alt = "";
+                syncBodyLock();
+            }, LIGHTBOX_ANIMATION_MS);
+        };
+
+        if (closeLightboxButton && lightbox) {
+            closeLightboxButton.addEventListener("click", () => setLightboxState(false));
+            lightbox.addEventListener("click", (event) => {
+                if (event.target === lightbox) {
+                    setLightboxState(false);
+                }
+            });
+            document.addEventListener("keydown", (event) => {
+                if (event.key === "Escape" && !lightbox.hidden) {
+                    setLightboxState(false);
+                }
+            });
+        }
+        // --- Конец логики Лайтбокса ---
 
         function escapeHtml(value) {
             return String(value ?? "")
@@ -168,7 +226,8 @@
 
                 if (isLikelyImageUrl(rawUrl)) {
                     const imageUrl = normalizeImageUrl(rawUrl);
-                    result += `<img src="${escapeHtml(imageUrl)}" class="article-inline-img" alt="Изображение к новости" loading="lazy">`;
+                    // Добавлены классы is-zoomable и стили для правильного отображения курсора
+                    result += `<img src="${escapeHtml(imageUrl)}" class="article-inline-img is-zoomable" style="cursor: zoom-in;" alt="Изображение к новости" loading="lazy" tabindex="0" role="button" aria-label="Открыть фото">`;
                 } else {
                     result += escapeHtml(rawUrl);
                 }
@@ -210,6 +269,18 @@
             `;
 
             document.title = `${title} | Школа Мечты`;
+
+            // Инициализация событий для только что созданных картинок
+            const images = contentArea.querySelectorAll('.article-inline-img.is-zoomable');
+            images.forEach((img) => {
+                img.addEventListener("click", () => setLightboxState(true, img));
+                img.addEventListener("keydown", (event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setLightboxState(true, img);
+                    }
+                });
+            });
         }
 
         function loadNews() {

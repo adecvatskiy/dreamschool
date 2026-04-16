@@ -105,30 +105,30 @@
         </section>
 
         <section class="spotlight-strip section" aria-label="Ключевые преимущества">
-            <div class="container spotlight-grid">
-                <article class="spotlight-card spotlight-text">
-                    <p class="eyebrow">Сильная база</p>
-                    <h3>Учебные результаты без перегруза</h3>
-                    <p>Программы выстроены так, чтобы сохранять баланс между академией, практикой и психологическим комфортом ученика.</p>
-                </article>
+    <div class="container spotlight-grid">
+        <article class="spotlight-card spotlight-text">
+            <p class="eyebrow">Сильная база</p>
+            <h3>Учебные результаты без перегруза</h3>
+            <p>Программы выстроены так, чтобы сохранять баланс между академией, практикой и психологическим комфортом ученика.</p>
+        </article>
 
-                <figure class="spotlight-card spotlight-photo">
-                    <img class="photo-image" src="img/gallery-modern-class.svg" alt="Современное учебное пространство">
-                    <figcaption>Среда, в которой комфортно учиться ежедневно</figcaption>
-                </figure>
+        <figure class="spotlight-card spotlight-photo photo-card">
+            <img class="photo-image" src="img/gallery-modern-class.jpg" alt="Современное учебное пространство">
+            <figcaption>Среда, в которой комфортно учиться ежедневно</figcaption>
+        </figure>
 
-                <figure class="spotlight-card spotlight-photo">
-                    <img class="photo-image" src="img/about-teamwork.svg" alt="Командная работа учеников">
-                    <figcaption>Команды, проекты и навыки реального взаимодействия</figcaption>
-                </figure>
+        <figure class="spotlight-card spotlight-photo photo-card">
+            <img class="photo-image" src="img/about-teamwork.webp" alt="Командная работа учеников">
+            <figcaption>Команды, проекты и навыки реального взаимодействия</figcaption>
+        </figure>
 
-                <article class="spotlight-card spotlight-text">
-                    <p class="eyebrow">Поддержка семьи</p>
-                    <h3>Прозрачная коммуникация с родителями</h3>
-                    <p>Регулярная обратная связь, открытые уроки и понятная траектория развития помогают видеть прогресс ребёнка шаг за шагом.</p>
-                </article>
-            </div>
-        </section>
+        <article class="spotlight-card spotlight-text">
+            <p class="eyebrow">Поддержка семьи</p>
+            <h3>Прозрачная коммуникация с родителями</h3>
+            <p>Регулярная обратная связь, открытые уроки и понятная траектория развития помогают видеть прогресс ребёнка шаг за шагом.</p>
+        </article>
+    </div>
+</section>
 
         <section class="about section" id="about">
             <div class="container">
@@ -157,11 +157,11 @@
 
                     <div class="about-gallery">
                         <figure class="photo-card tall">
-                            <img class="photo-image photo-one" src="img/about-teamwork.svg" alt="Ученики на совместной работе">
+                            <img class="photo-image photo-one" src="img/about-teamwork1.webp" alt="Ученики на совместной работе">
                             <figcaption>Совместная работа в проектных командах</figcaption>
                         </figure>
                         <figure class="photo-card">
-                            <img class="photo-image photo-two" src="img/about-digital-class.svg" alt="Цифровой класс">
+                            <img class="photo-image photo-two" src="img/about-digital-class.jpeg" alt="Цифровой класс">
                             <figcaption>Цифровые классы и интерактивные уроки</figcaption>
                         </figure>
                         <figure class="photo-card">
@@ -297,7 +297,7 @@
 
                     <label class="form-field">
                         <span>Номер телефона</span>
-                        <input type="text" name="phone" inputmode="numeric" pattern="[0-9]*" placeholder="79991234567" required>
+                        <input type="tel" name="phone" inputmode="numeric" autocomplete="tel" pattern="[0-9]*" maxlength="11" placeholder="79991234567" required>
                     </label>
 
                     <button class="btn btn-primary" type="submit">Отправить заявку</button>
@@ -421,8 +421,24 @@
                 }
             });
 
+            phoneInput?.addEventListener("beforeinput", (event) => {
+                if (event.inputType.startsWith("delete")) {
+                    return;
+                }
+
+                if (/\D/.test(event.data ?? "")) {
+                    event.preventDefault();
+                }
+            });
+
             phoneInput?.addEventListener("input", () => {
                 phoneInput.value = sanitizePhone(phoneInput.value);
+            });
+
+            phoneInput?.addEventListener("paste", (event) => {
+                event.preventDefault();
+                const pastedValue = event.clipboardData?.getData("text") ?? "";
+                phoneInput.value = sanitizePhone(pastedValue).slice(0, phoneInput.maxLength);
             });
 
             form.addEventListener("submit", async (event) => {

@@ -152,6 +152,7 @@
         
         let currentRequestId = 0;
         let allNewsRecords = [];
+        let heroNewsRecord = null;
         const selectedCategories = new Set();
 
         function escapeHtml(value) {
@@ -173,6 +174,27 @@
             }
             const parts = String(dateValue).trim().split(/\s+/);
             return { day: parts.shift() || "", rest: parts.join(" ") || "" };
+        }
+
+        function parseNewsDateToTimestamp(dateValue) {
+            if (!dateValue) return Number.POSITIVE_INFINITY;
+            const text = String(dateValue).trim();
+            if (!text) return Number.POSITIVE_INFINITY;
+
+            const directDate = new Date(text);
+            if (!Number.isNaN(directDate.getTime())) return directDate.getTime();
+
+            const ruDateMatch = text.match(/^(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{2,4})$/);
+            if (ruDateMatch) {
+                const day = Number.parseInt(ruDateMatch[1], 10);
+                const month = Number.parseInt(ruDateMatch[2], 10) - 1;
+                let year = Number.parseInt(ruDateMatch[3], 10);
+                if (year < 100) year += 2000;
+                const fallbackDate = new Date(year, month, day);
+                if (!Number.isNaN(fallbackDate.getTime())) return fallbackDate.getTime();
+            }
+
+            return Number.POSITIVE_INFINITY;
         }
 
         function normalizeUrl(url) {
@@ -318,12 +340,12 @@
                 : allNewsRecords.filter((record) => selectedCategories.has(record.category));
 
             if (filteredRecords.length === 0) {
-                renderHeroNews(null, 0);
+                renderHeroNews(heroNewsRecord?.item || null, heroNewsRecord?.index || 0);
                 renderState("По выбранным категориям новостей не найдено.");
                 return;
             }
 
-            renderHeroNews(filteredRecords[0].item, filteredRecords[0].index);
+            renderHeroNews(heroNewsRecord?.item || null, heroNewsRecord?.index || 0);
             renderNewsList(filteredRecords);
         }
 
@@ -332,17 +354,29 @@
                 renderHeroNews(null, 0);
                 renderState("Новости пока не опубликованы.");
                 allNewsRecords = [];
+                heroNewsRecord = null;
                 if (newsFiltersWrap) {
                     newsFiltersWrap.hidden = true;
                 }
                 return;
             }
 
+            heroNewsRecord = {
+                item: items[0] || {},
+                index: 0
+            };
+
             allNewsRecords = items.map((item, index) => ({
                 item: item || {},
                 index,
                 category: normalizeCategory(item?.category)
-            }));
+            }))
+            .sort((a, b) => {
+                const dateA = parseNewsDateToTimestamp(a.item?.date);
+                const dateB = parseNewsDateToTimestamp(b.item?.date);
+                if (dateA !== dateB) return dateA - dateB;
+                return a.index - b.index;
+            });
 
             const allowedCategories = new Set(getTopCategories(allNewsRecords));
             Array.from(selectedCategories).forEach((category) => {
