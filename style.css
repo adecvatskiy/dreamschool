@@ -2248,17 +2248,7 @@ h1, h2, h3, .logo-text {
     background: color-mix(in srgb, var(--theme-primary) 10%, var(--theme-surface));
 }
 
-@media (max-width: 760px) {
-    .site-header {
-        padding-top: 6px;
-    }
-
-    .hero-copy,
-    .subnav-card,
-    .article-wrap {
-        padding: 24px;
-    }
-
+@media (max-width: 1120px) {
     .header-inner {
         grid-template-columns: 1fr auto;
         align-items: center;
@@ -2352,6 +2342,18 @@ h1, h2, h3, .logo-text {
         padding: 7px 11px;
         font-size: 0.88rem;
         border-radius: 12px;
+    }
+}
+
+@media (max-width: 760px) {
+    .site-header {
+        padding-top: 6px;
+    }
+
+    .hero-copy,
+    .subnav-card,
+    .article-wrap {
+        padding: 24px;
     }
 }
 

@@ -6,7 +6,7 @@
         "theme-dark": "#161d1b",
         "theme-contrast": "#000000"
     };
-    const MOBILE_HEADER_BREAKPOINT = 760;
+    const MOBILE_HEADER_BREAKPOINT = 1120;
 
     const readSavedTheme = () => {
         try {
