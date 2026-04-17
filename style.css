@@ -972,6 +972,12 @@ img {
     background: rgba(9, 19, 30, 0.55);
 }
 
+@keyframes pulse-close-btn {
+    0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5); }
+    70% { box-shadow: 0 0 0 14px rgba(255, 255, 255, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+}
+
 .photo-lightbox__close {
     position: absolute;
     top: 14px;
@@ -981,12 +987,16 @@ img {
     border-radius: 50%;
     color: #ffffff;
     border: 1px solid rgba(255, 255, 255, 0.28);
-    background: rgba(0, 0, 0, 0.44);
+    background: rgba(0, 0, 0, 0.5);
+    animation: pulse-close-btn 1s infinite;
+    transition: transform 0.5s ease, background-color 0.5s ease;
 }
 
 .photo-lightbox__close:hover,
 .photo-lightbox__close:focus-visible {
-    background: rgba(0, 0, 0, 0.62);
+    background: rgba(0, 0, 0, 0.85);
+    transform: scale(1.1);
+    animation: none;
 }
 
 .modal-dialog h2 {
@@ -1981,12 +1991,40 @@ h1, h2, h3, .logo-text {
     background: color-mix(in srgb, var(--theme-accent) 14%, var(--theme-surface));
 }
 
-.diary-link {
+...diary-link {
     border-radius: 999px;
     background: linear-gradient(135deg, var(--theme-primary), color-mix(in srgb, var(--theme-primary) 82%, #48a88f));
     color: #f7fffc;
     border: 0;
     box-shadow: 0 12px 22px rgba(19, 68, 56, 0.24);
+}
+
+#theme-contrast:checked ~ .page-shell .diary-link {
+    background: var(--theme-accent);
+    color: #000000;
+    box-shadow: none;
+    border: 2px solid #000000;
+}
+
+#theme-contrast:checked ~ .page-shell .diary-link:hover,
+#theme-contrast:checked ~ .page-shell .diary-link:focus-visible {
+    background: #ffffff;
+    color: #000000;
+    transform: translateY(-1px);
+}
+
+#theme-contrast:checked ~ .page-shell .diary-link {
+    background: var(--theme-accent);
+    color: #000000;
+    box-shadow: none;
+    border: 2px solid #000000;
+}
+
+#theme-contrast:checked ~ .page-shell .diary-link:hover,
+#theme-contrast:checked ~ .page-shell .diary-link:focus-visible {
+    background: #ffffff;
+    color: #000000;
+    transform: translateY(-1px);
 }
 
 .diary-link:hover,
