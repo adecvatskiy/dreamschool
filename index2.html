@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+﻿
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -94,9 +95,9 @@
                 <div>
                     <h3>Контакты</h3>
                     <ul class="footer-list">
-                        <li>г. Прокопьевск, проспект Строителей, 25</li>
-                        <li>+7 (3846) 00-00-00</li>
-                        <li>school@example.ru</li>
+                        <li>г. Прокопьевск, ул. Строителей, дом 25</li>
+                        <li>+7 (3846) 12-34-56</li>
+                        <li>example@dreamschool.ru</li>
                     </ul>
                 </div>
 
@@ -149,7 +150,7 @@
         const heroNewsTitle = document.getElementById("hero-news-title");
         const heroNewsPreview = document.getElementById("hero-news-preview");
         const heroNewsLink = document.getElementById("hero-news-link");
-        
+
         let currentRequestId = 0;
         let allNewsRecords = [];
         let heroNewsRecord = null;
@@ -291,7 +292,7 @@
             heroNewsTitle.textContent = String(item.title || "Новость без заголовка").trim();
             const plainText = new DOMParser().parseFromString(item.preview || item.content || "", "text/html").body.textContent;
             heroNewsPreview.textContent = (plainText.slice(0, HERO_PREVIEW_LIMIT) + (plainText.length > HERO_PREVIEW_LIMIT ? "..." : "")) || "Нет описания.";
-            
+
             // Ссылка ведет на наш умный шаблон в папке news
             heroNewsLink.href = `news/news.html?id=${index}`;
             heroNewsLink.textContent = "Читать подробнее";
@@ -305,7 +306,7 @@
                 const category = escapeHtml(record.category);
                 const title = escapeHtml(data.title);
                 const imageInfo = getNewsImageInfo(data);
-                
+
                 const plainText = new DOMParser().parseFromString(data.preview || data.content || "", "text/html").body.textContent.replace(/\s+/g, " ").trim();
                 const shortPreview = plainText.length > CARD_PREVIEW_LIMIT ? plainText.slice(0, CARD_PREVIEW_LIMIT) + "..." : plainText;
 
@@ -372,11 +373,15 @@
                 category: normalizeCategory(item?.category)
             }))
             .sort((a, b) => {
-                const dateA = parseNewsDateToTimestamp(a.item?.date);
-                const dateB = parseNewsDateToTimestamp(b.item?.date);
-                if (dateA !== dateB) return dateA - dateB;
-                return a.index - b.index;
-            });
+  const dateA = parseNewsDateToTimestamp(a.item?.date);
+  const dateB = parseNewsDateToTimestamp(b.item?.date);
+
+  // Меняем порядок: из B вычитаем A для сортировки по убыванию
+  if (dateA !== dateB) return dateB - dateA;
+
+  // Если даты равны, можно оставить сортировку по индексу (тоже в обратном порядке)
+  return b.index - a.index;
+});
 
             const allowedCategories = new Set(getTopCategories(allNewsRecords));
             Array.from(selectedCategories).forEach((category) => {
@@ -419,7 +424,7 @@
         function loadNews() {
             heroNewsTitle.classList.add("loading-dots");
             heroNewsPreview.classList.add("loading-dots");
-            
+
             const requestId = ++currentRequestId;
             const callbackName = `newsCallback_${requestId}_${Date.now()}`;
             const script = document.createElement("script");
@@ -462,6 +467,5 @@
     </script>
 </body>
 </html>
-
 
 
