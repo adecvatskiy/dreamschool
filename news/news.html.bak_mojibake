@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Школа Мечты | Новости</title>
-    <link rel="icon" href="img/Frame%2014.png" type="image/x-icon">
-    <meta name="description" content="Подробная страница новости школы.">
+    <title>РЁРєРѕР»Р° РњРµС‡С‚С‹ | РќРѕРІРѕСЃС‚СЊ</title>
+    <meta name="description" content="РџРѕРґСЂРѕР±РЅР°СЏ СЃС‚СЂР°РЅРёС†Р° РЅРѕРІРѕСЃС‚Рё С€РєРѕР»С‹.">
     <link rel="stylesheet" href="../style.css">
     <script src="../theme.js" defer></script>
 </head>
@@ -17,27 +16,27 @@
     <div class="page-shell">
         <header class="site-header">
             <div class="container header-inner">
-                <a class="logo" href="../index2.html" aria-label="Школа Мечты">
-                    <span class="logo-mark">М</span>
-                    <span class="logo-text">Школа Мечты</span>
+                <a class="logo" href="../index2.html" aria-label="РЁРєРѕР»Р° РњРµС‡С‚С‹">
+                    <span class="logo-mark">Рњ</span>
+                    <span class="logo-text">РЁРєРѕР»Р° РњРµС‡С‚С‹</span>
                 </a>
 
-                <button class="header-toggle" type="button" aria-expanded="false" aria-controls="header-controls-menu" data-expand-label="Развернуть" data-collapse-label="Свернуть">Развернуть</button>
+                <button class="header-toggle" type="button" aria-expanded="false" aria-controls="header-controls-menu" data-expand-label="Р Р°Р·РІРµСЂРЅСѓС‚СЊ" data-collapse-label="РЎРІРµСЂРЅСѓС‚СЊ">Р Р°Р·РІРµСЂРЅСѓС‚СЊ</button>
                 <div class="header-controls" id="header-controls-menu">
-                    <nav class="page-nav" aria-label="Разделы сайта">
-                        <a href="../index.html">Главная</a>
-                        <a href="../index2.html" aria-current="page">Новости</a>
-                        <a href="../index3.html">Сведения об образовательной организации</a>
+                    <nav class="page-nav" aria-label="Р Р°Р·РґРµР»С‹ СЃР°Р№С‚Р°">
+                        <a href="../index.html">Р“Р»Р°РІРЅР°СЏ</a>
+                        <a href="../index2.html" aria-current="page">РќРѕРІРѕСЃС‚Рё</a>
+                        <a href="../index3.html">РЎРІРµРґРµРЅРёСЏ РѕР± РѕР±СЂР°Р·РѕРІР°С‚РµР»СЊРЅРѕР№ РѕСЂРіР°РЅРёР·Р°С†РёРё</a>
                     </nav>
 
-                    <a class="diary-link" href="https://cabinet.ruobr.ru/login/" target="_blank" rel="noopener noreferrer">Электронный дневник</a>
+                    <a class="diary-link" href="https://cabinet.ruobr.ru/login/" target="_blank" rel="noopener noreferrer">Р­Р»РµРєС‚СЂРѕРЅРЅС‹Р№ РґРЅРµРІРЅРёРє</a>
 
-                    <div class="theme-switcher" aria-label="Переключение темы">
-                        <span class="theme-title">Тема</span>
+                    <div class="theme-switcher" aria-label="РџРµСЂРµРєР»СЋС‡РµРЅРёРµ С‚РµРјС‹">
+                        <span class="theme-title">РўРµРјР°</span>
                         <div class="theme-options">
-                            <label for="theme-light">Светлая</label>
-                            <label for="theme-dark">Темная</label>
-                            <label for="theme-contrast">Контрастная</label>
+                            <label for="theme-light">РЎРІРµС‚Р»Р°СЏ</label>
+                            <label for="theme-dark">РўРµРјРЅР°СЏ</label>
+                            <label for="theme-contrast">РљРѕРЅС‚СЂР°СЃС‚РЅР°СЏ</label>
                         </div>
                     </div>
                 </div>
@@ -47,18 +46,18 @@
         <main class="news-detail-page">
             <section class="section">
                 <div class="container">
-                    <a href="../index2.html" class="news-back-link" aria-label="К списку новостей" title="К списку новостей">&larr;</a>
+                    <a href="../index2.html" class="news-back-link" aria-label="Рљ СЃРїРёСЃРєСѓ РЅРѕРІРѕСЃС‚РµР№" title="Рљ СЃРїРёСЃРєСѓ РЅРѕРІРѕСЃС‚РµР№">&larr;</a>
 
                     <article class="article-wrap" id="news-content">
-                        <p class="article-state loading-dots">Загружаем новость</p>
+                        <p class="article-state loading-dots">Р—Р°РіСЂСѓР¶Р°РµРј РЅРѕРІРѕСЃС‚СЊ</p>
                     </article>
                 </div>
             </section>
         </main>
 
         <div class="photo-lightbox" data-lightbox hidden>
-            <div class="photo-lightbox__dialog" role="dialog" aria-modal="true" aria-label="Просмотр фото">
-                <button class="photo-lightbox__close" type="button" aria-label="Закрыть фото" data-close-lightbox>×</button>
+            <div class="photo-lightbox__dialog" role="dialog" aria-modal="true" aria-label="РџСЂРѕСЃРјРѕС‚СЂ С„РѕС‚Рѕ">
+                <button class="photo-lightbox__close" type="button" aria-label="Р—Р°РєСЂС‹С‚СЊ С„РѕС‚Рѕ" data-close-lightbox>Г—</button>
                 <img class="photo-lightbox__image" src="" alt="" data-lightbox-image>
             </div>
         </div>
@@ -66,33 +65,33 @@
         <footer class="site-footer">
             <div class="container footer-grid">
                 <div>
-                    <a class="logo footer-logo" href="../index.html">Школа Мечты</a>
+                    <a class="logo footer-logo" href="../index.html">РЁРєРѕР»Р° РњРµС‡С‚С‹</a>
                     <p class="footer-text">
-                        Современная школьная среда, в которой новости отражают реальную жизнь, достижения и рост учеников.
+                        РЎРѕРІСЂРµРјРµРЅРЅР°СЏ С€РєРѕР»СЊРЅР°СЏ СЃСЂРµРґР°, РІ РєРѕС‚РѕСЂРѕР№ РЅРѕРІРѕСЃС‚Рё РѕС‚СЂР°Р¶Р°СЋС‚ СЂРµР°Р»СЊРЅСѓСЋ Р¶РёР·РЅСЊ, РґРѕСЃС‚РёР¶РµРЅРёСЏ Рё СЂРѕСЃС‚ СѓС‡РµРЅРёРєРѕРІ.
                     </p>
                 </div>
 
                  <div>
-                    <h3>Контакты</h3>
+                    <h3>РљРѕРЅС‚Р°РєС‚С‹</h3>
                     <ul class="footer-list">
-                        <li>г. Прокопьевск, ул. Строителей, дом 25</li>
+                        <li>Рі. РџСЂРѕРєРѕРїСЊРµРІСЃРє, СѓР». РЎС‚СЂРѕРёС‚РµР»РµР№, РґРѕРј 25</li>
                         <li>+7 (3846) 12-34-56</li>
                         <li>example@dreamschool.ru</li>
                     </ul>
                 </div>
 
                 <div>
-                    <h3>Социальные сети</h3>
+                    <h3>РЎРѕС†РёР°Р»СЊРЅС‹Рµ СЃРµС‚Рё</h3>
                     <div class="social-links">
                         <a href="https://vk.com/" aria-label="VK" target="_blank" rel="noopener noreferrer">VK</a>
                         <a href="https://max.ru/" aria-label="MAX" target="_blank" rel="noopener noreferrer">MAX</a>
                     </div>
                 </div>
 
-                <div class="map-card footer-map" aria-label="Карта">
+                <div class="map-card footer-map" aria-label="РљР°СЂС‚Р°">
                     <div class="map-embed">
-                        <a href="https://yandex.ru/maps/11291/prokopevsk/?utm_medium=mapframe&utm_source=maps">Прокопьевск</a>
-                        <a href="https://yandex.ru/maps/11291/prokopevsk/house/prospekt_stroiteley_25/bE8YcAVgTUIEQFtpfXR3d3xgZA==/?ll=86.621253%2C53.865942&utm_medium=mapframe&utm_source=maps&z=17.6">Проспект Строителей, 25 — Яндекс Карты</a>
+                        <a href="https://yandex.ru/maps/11291/prokopevsk/?utm_medium=mapframe&utm_source=maps">РџСЂРѕРєРѕРїСЊРµРІСЃРє</a>
+                        <a href="https://yandex.ru/maps/11291/prokopevsk/house/prospekt_stroiteley_25/bE8YcAVgTUIEQFtpfXR3d3xgZA==/?ll=86.621253%2C53.865942&utm_medium=mapframe&utm_source=maps&z=17.6">РџСЂРѕСЃРїРµРєС‚ РЎС‚СЂРѕРёС‚РµР»РµР№, 25 вЂ” РЇРЅРґРµРєСЃ РљР°СЂС‚С‹</a>
                         <iframe src="https://yandex.ru/map-widget/v1/?ll=86.621253%2C53.865942&mode=whatshere&whatshere%5Bpoint%5D=86.620582%2C53.865979&whatshere%5Bzoom%5D=17&z=17.6" frameborder="1" allowfullscreen="true"></iframe>
                     </div>
                 </div>
@@ -101,7 +100,7 @@
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbznx3JxKYu81ldsdG3qkdfimPQ6jA0ZuQKYgK8ZK1cG4TfiK6bXazEtqG8M-Lhwx7zbLg/exec";
+        const API_URL = "https://script.google.com/macros/s/AKfycbzEFYElv0PCWbVV-pu9kjB3YbyOMtaQaXd7HRvJRYqHQFj_xvPTi6BU2wpDDRDwjdpC3w/exec";
         const REQUEST_TIMEOUT_MS = 10000;
         const IMAGE_LINK_REGEX = /(https?:\/\/[^\s<>"']+)/gi;
         const IMAGE_EXT_REGEX = /\.(?:png|jpe?g|gif|webp|svg)(?:[?#][^\s]*)?$/i;
@@ -114,7 +113,7 @@
         const newsId = Number.parseInt(params.get("id"), 10);
         const contentArea = document.getElementById("news-content");
 
-        // --- Логика Лайтбокса ---
+        // --- Р›РѕРіРёРєР° Р›Р°Р№С‚Р±РѕРєСЃР° ---
         const LIGHTBOX_ANIMATION_MS = 260;
         const lightbox = document.querySelector("[data-lightbox]");
         const lightboxImage = document.querySelector("[data-lightbox-image]");
@@ -131,7 +130,7 @@
 
             if (isOpen && image) {
                 lightboxImage.src = image.src;
-                lightboxImage.alt = image.alt || "Увеличенное изображение";
+                lightboxImage.alt = image.alt || "РЈРІРµР»РёС‡РµРЅРЅРѕРµ РёР·РѕР±СЂР°Р¶РµРЅРёРµ";
                 lightbox.hidden = false;
                 lightbox.classList.remove("is-closing");
                 requestAnimationFrame(() => lightbox.classList.add("is-visible"));
@@ -163,7 +162,7 @@
                 }
             });
         }
-        // --- Конец логики Лайтбокса ---
+        // --- РљРѕРЅРµС† Р»РѕРіРёРєРё Р›Р°Р№С‚Р±РѕРєСЃР° ---
 
         function escapeHtml(value) {
             return String(value ?? "")
@@ -214,7 +213,7 @@
             if (!Number.isNaN(date.getTime())) {
                 return date.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" });
             }
-            return String(dateValue || "Дата не указана").trim();
+            return String(dateValue || "Р”Р°С‚Р° РЅРµ СѓРєР°Р·Р°РЅР°").trim();
         }
 
         function decodeHtmlEntities(text) {
@@ -280,8 +279,8 @@
 
                 if (isLikelyImageUrl(rawUrl)) {
                     const imageUrl = normalizeImageUrl(rawUrl);
-                    // ��������� ������ is-zoomable � ����� ��� ����������� ����������� �������
-                    result += `<img src="${escapeHtml(imageUrl)}" class="article-inline-img is-zoomable" style="cursor: zoom-in;" alt="����������� � �������" loading="lazy" tabindex="0" role="button" aria-label="������� ����">`;
+                    // Добавлены классы is-zoomable и стили для правильного отображения курсора
+                    result += `<img src="${escapeHtml(imageUrl)}" class="article-inline-img is-zoomable" style="cursor: zoom-in;" alt="Изображение к новости" loading="lazy" tabindex="0" role="button" aria-label="Открыть фото">`;
                 } else {
                     result += plainTextChunkToHtml(rawUrl);
                 }
@@ -398,14 +397,6 @@
                 if (prop === "font-size" && /^(\d+(\.\d+)?)(px|pt|rem|em|%)$/i.test(value)) {
                     safeRules.push(`font-size:${value}`);
                 }
-
-                if (prop === "font-style" && /^(normal|italic|oblique)$/i.test(value)) {
-                    safeRules.push(`font-style:${value}`);
-                }
-
-                if (prop === "text-decoration" && /^(none|underline)$/i.test(value)) {
-                    safeRules.push(`text-decoration:${value}`);
-                }
             });
 
             return safeRules.join(";");
@@ -434,11 +425,11 @@
                     img.src = imageUrl;
                     img.className = "article-inline-img is-zoomable";
                     img.style.cursor = "zoom-in";
-                    img.alt = "Изображение к новости";
+                    img.alt = "РР·РѕР±СЂР°Р¶РµРЅРёРµ Рє РЅРѕРІРѕСЃС‚Рё";
                     img.loading = "lazy";
                     img.tabIndex = 0;
                     img.setAttribute("role", "button");
-                    img.setAttribute("aria-label", "Открыть фото");
+                    img.setAttribute("aria-label", "РћС‚РєСЂС‹С‚СЊ С„РѕС‚Рѕ");
                     fragment.appendChild(img);
                 } else {
                     fragment.appendChild(document.createTextNode(rawUrl));
@@ -461,19 +452,19 @@
 
         function render(items) {
             if (!Number.isInteger(newsId) || newsId < 0) {
-                renderState("Некорректный номер новости.");
+                renderState("РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ РЅРѕРјРµСЂ РЅРѕРІРѕСЃС‚Рё.");
                 return;
             }
 
             if (!Array.isArray(items) || !items[newsId]) {
-                renderState("Новость не найдена.");
+                renderState("РќРѕРІРѕСЃС‚СЊ РЅРµ РЅР°Р№РґРµРЅР°.");
                 return;
             }
 
             const item = items[newsId] || {};
-            const title = String(item.title || item["Заголовок"] || "Без названия").trim();
-            const dateText = formatDate(item.date || item["Дата"] || "");
-            const bodySource = item.content || item.preview || item["Текст"] || "";
+            const title = String(item.title || item["Р—Р°РіРѕР»РѕРІРѕРє"] || "Р‘РµР· РЅР°Р·РІР°РЅРёСЏ").trim();
+            const dateText = formatDate(item.date || item["Р”Р°С‚Р°"] || "");
+            const bodySource = item.content || item.preview || item["РўРµРєСЃС‚"] || "";
             const bodyHtml = buildArticleBody(bodySource);
 
             contentArea.innerHTML = `
@@ -484,9 +475,9 @@
                 <div class="article-body">${bodyHtml}</div>
             `;
 
-            document.title = `${title} | Школа Мечты`;
+            document.title = `${title} | РЁРєРѕР»Р° РњРµС‡С‚С‹`;
 
-            // Инициализация событий для только что созданных картинок
+            // РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ СЃРѕР±С‹С‚РёР№ РґР»СЏ С‚РѕР»СЊРєРѕ С‡С‚Рѕ СЃРѕР·РґР°РЅРЅС‹С… РєР°СЂС‚РёРЅРѕРє
             const images = contentArea.querySelectorAll('.article-inline-img.is-zoomable');
             images.forEach((img) => {
                 img.addEventListener("click", () => setLightboxState(true, img));
@@ -512,7 +503,7 @@
             const timeoutId = window.setTimeout(() => {
                 if (settled) return;
                 settled = true;
-                renderState("Не удалось загрузить новость. Проверьте подключение и обновите страницу.");
+                renderState("РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РЅРѕРІРѕСЃС‚СЊ. РџСЂРѕРІРµСЂСЊС‚Рµ РїРѕРґРєР»СЋС‡РµРЅРёРµ Рё РѕР±РЅРѕРІРёС‚Рµ СЃС‚СЂР°РЅРёС†Сѓ.");
                 cleanup();
             }, REQUEST_TIMEOUT_MS);
 
@@ -528,7 +519,7 @@
                 if (settled) return;
                 settled = true;
                 window.clearTimeout(timeoutId);
-                renderState("Ошибка загрузки данных. Попробуйте позже.");
+                renderState("РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё РґР°РЅРЅС‹С…. РџРѕРїСЂРѕР±СѓР№С‚Рµ РїРѕР·Р¶Рµ.");
                 cleanup();
             };
 
@@ -540,8 +531,6 @@
     </script>
 </body>
 </html>
-
-
 
 
 
