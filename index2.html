@@ -122,22 +122,48 @@
     </div>
 
     <script>
-        // Идеальное восстановление позиции скролла
-        window.addEventListener('pageshow', () => {
-            const scrollPos = sessionStorage.getItem('newsScrollPosition');
+        const STORAGE_SCROLL_KEY = "newsScrollPosition";
+        const NEWS_LOAD_TIMEOUT_MS = 10000;
+        const SCROLL_RESTORE_DELAY_MS = 50;
+        const htmlParser = new DOMParser();
+
+        const readScrollPosition = () => {
+            try {
+                return sessionStorage.getItem(STORAGE_SCROLL_KEY);
+            } catch {
+                return null;
+            }
+        };
+
+        const writeScrollPosition = (value) => {
+            try {
+                sessionStorage.setItem(STORAGE_SCROLL_KEY, String(value));
+            } catch {
+                // Игнорируем ошибки приватного режима/запрета storage.
+            }
+        };
+
+        const toPlainText = (htmlValue) => {
+            const html = String(htmlValue ?? "");
+            if (!html) return "";
+            return (htmlParser.parseFromString(html, "text/html").body.textContent || "")
+                .replace(/\s+/g, " ")
+                .trim();
+        };
+
+        window.addEventListener("pageshow", () => {
+            const scrollPos = readScrollPosition();
             if (scrollPos) {
-                // Небольшая задержка, чтобы контент успел отрендериться перед скроллом
                 const top = Number.parseInt(scrollPos, 10);
                 if (!Number.isNaN(top)) {
-                    setTimeout(() => window.scrollTo({ top, behavior: 'auto' }), 50);
+                    window.setTimeout(() => window.scrollTo({ top, behavior: "auto" }), SCROLL_RESTORE_DELAY_MS);
                 }
             }
         });
 
-        // Сохранение позиции перед переходом
-        document.addEventListener('click', (e) => {
-            if (e.target.closest('.news-link') || e.target.closest('#hero-news-link')) {
-                sessionStorage.setItem('newsScrollPosition', window.scrollY);
+        document.addEventListener("click", (event) => {
+            if (event.target.closest(".news-link") || event.target.closest("#hero-news-link")) {
+                writeScrollPosition(window.scrollY);
             }
         });
 
@@ -155,6 +181,7 @@
         let currentRequestId = 0;
         let allNewsRecords = [];
         let heroNewsRecord = null;
+        let pinnedNewsRecord = null;
         const selectedCategories = new Set();
 
         function escapeHtml(value) {
@@ -162,7 +189,7 @@
                 .replace(/&/g, "&amp;")
                 .replace(/</g, "&lt;")
                 .replace(/>/g, "&gt;")
-                .replace(/\"/g, "&quot;")
+                .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#39;");
         }
 
@@ -291,7 +318,7 @@
             }
 
             heroNewsTitle.textContent = String(item.title || "Новость без заголовка").trim();
-            const plainText = new DOMParser().parseFromString(item.preview || item.content || "", "text/html").body.textContent;
+            const plainText = toPlainText(item.preview || item.content || "");
             heroNewsPreview.textContent = (plainText.slice(0, HERO_PREVIEW_LIMIT) + (plainText.length > HERO_PREVIEW_LIMIT ? "..." : "")) || "Нет описания.";
 
             // Ссылка ведет на наш умный шаблон в папке news
@@ -307,21 +334,25 @@
                 const category = escapeHtml(record.category);
                 const title = escapeHtml(data.title);
                 const imageInfo = getNewsImageInfo(data);
+                const interestingBadge = record.isPinned
+                    ? '<span class="card-tag news-interest-badge">Самое интересное!</span>'
+                    : "";
 
-                const plainText = new DOMParser().parseFromString(data.preview || data.content || "", "text/html").body.textContent.replace(/\s+/g, " ").trim();
+                const plainText = toPlainText(data.preview || data.content || "");
                 const shortPreview = plainText.length > CARD_PREVIEW_LIMIT ? plainText.slice(0, CARD_PREVIEW_LIMIT) + "..." : plainText;
 
                 const imageBlock = imageInfo.src ? `<div class="news-image-wrap"><img class="news-image" src="${escapeHtml(imageInfo.src)}" alt="Изображение к новости" loading="lazy"></div>` : "";
                 const articleUrl = `news/news.html?id=${record.index}`;
 
                 return `
-                    <article class="news-item ${data.featured ? "news-item-featured" : ""}">
+                    <article class="news-item ${data.featured ? "news-item-featured" : ""} ${record.isPinned ? "news-item-interesting" : ""}">
                         <div class="news-item-date">
                             <strong>${escapeHtml(date.day)}</strong>
                             <span>${escapeHtml(date.rest)}</span>
                         </div>
                         <div class="news-item-content">
                             <div class="news-meta">
+                                ${interestingBadge}
                                 <span class="card-tag">${category}</span>
                             </div>
                             <h2>${title}</h2>
@@ -337,9 +368,20 @@
         }
 
         function applyNewsFilters() {
-            const filteredRecords = selectedCategories.size === 0
+            const baseRecords = selectedCategories.size === 0
                 ? allNewsRecords
                 : allNewsRecords.filter((record) => selectedCategories.has(record.category));
+            const filteredRecords = baseRecords.slice();
+
+            if (pinnedNewsRecord) {
+                const pinnedPosition = filteredRecords.findIndex((record) => record.index === pinnedNewsRecord.index);
+                if (pinnedPosition > 0) {
+                    filteredRecords.splice(pinnedPosition, 1);
+                    filteredRecords.unshift(pinnedNewsRecord);
+                } else if (pinnedPosition === -1) {
+                    filteredRecords.unshift(pinnedNewsRecord);
+                }
+            }
 
             if (filteredRecords.length === 0) {
                 renderHeroNews(heroNewsRecord?.item || null, heroNewsRecord?.index || 0);
@@ -357,6 +399,7 @@
                 renderState("Новости пока не опубликованы.");
                 allNewsRecords = [];
                 heroNewsRecord = null;
+                pinnedNewsRecord = null;
                 if (newsFiltersWrap) {
                     newsFiltersWrap.hidden = true;
                 }
@@ -368,21 +411,27 @@
                 index: 0
             };
 
-            allNewsRecords = items.map((item, index) => ({
+            const mappedRecords = items.map((item, index) => ({
                 item: item || {},
                 index,
-                category: normalizeCategory(item?.category)
-            }))
-            .sort((a, b) => {
-  const dateA = parseNewsDateToTimestamp(a.item?.date);
-  const dateB = parseNewsDateToTimestamp(b.item?.date);
+                category: normalizeCategory(item?.category),
+                isPinned: index === 0
+            }));
 
-  // Меняем порядок: из B вычитаем A для сортировки по убыванию
-  if (dateA !== dateB) return dateB - dateA;
+            pinnedNewsRecord = mappedRecords.find((record) => record.isPinned) || null;
 
-  // Если даты равны, можно оставить сортировку по индексу (тоже в обратном порядке)
-  return b.index - a.index;
-});
+            const sortedRegularRecords = mappedRecords
+                .filter((record) => !record.isPinned)
+                .sort((a, b) => {
+                    const dateA = parseNewsDateToTimestamp(a.item?.date);
+                    const dateB = parseNewsDateToTimestamp(b.item?.date);
+                    if (dateA !== dateB) return dateB - dateA;
+                    return b.index - a.index;
+                });
+
+            allNewsRecords = pinnedNewsRecord
+                ? [pinnedNewsRecord, ...sortedRegularRecords]
+                : sortedRegularRecords;
 
             const allowedCategories = new Set(getTopCategories(allNewsRecords));
             Array.from(selectedCategories).forEach((category) => {
@@ -442,7 +491,7 @@
                 renderHeroNews(null, 0);
                 renderState("Не удалось загрузить новости. Проверьте подключение и обновите страницу.");
                 finish();
-            }, 10000);
+            }, NEWS_LOAD_TIMEOUT_MS);
 
             window[callbackName] = function(items) {
                 if (settled) return;

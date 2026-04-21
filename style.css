@@ -1593,6 +1593,11 @@ img {
     background: linear-gradient(180deg, var(--theme-surface) 0%, var(--theme-surface-soft) 100%);
 }
 
+.news-item-interesting {
+    border: 2px solid #f29a2e;
+    box-shadow: 0 0 0 3px color-mix(in srgb, #f29a2e 24%, transparent);
+}
+
 .news-item-date {
     display: grid;
     align-content: start;
@@ -1668,6 +1673,13 @@ img {
     color: var(--theme-text-muted);
     font-size: 0.92rem;
     font-weight: 700;
+}
+
+.news-interest-badge {
+    background: color-mix(in srgb, var(--theme-accent) 24%, var(--theme-surface));
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 54%, var(--theme-line));
+    color: var(--theme-heading);
+    font-weight: 800;
 }
 
 .news-link {

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+﻿﻿﻿<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -8,6 +8,80 @@
     <meta name="description" content="Подробная страница новости школы.">
     <link rel="stylesheet" href="../style.css">
     <script src="../theme.js" defer></script>
+    <style>
+        .ai-summary-tools {
+            margin: 1rem 0 1.2rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.65rem;
+            align-items: center;
+        }
+
+        .ai-summary-btn {
+            border: none;
+            border-radius: 999px;
+            padding: 0.62rem 0.95rem;
+            font-weight: 700;
+            font-size: 0.93rem;
+            cursor: pointer;
+            transition: transform 0.18s ease, opacity 0.18s ease, background-color 0.18s ease;
+            background: #ffdb4d;
+            color: #1e1e1e;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+
+        .ai-summary-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .ai-summary-btn:disabled {
+            cursor: wait;
+            opacity: 0.72;
+            transform: none;
+        }
+
+        .ai-summary-icon {
+            width: 1.2rem;
+            height: 1.2rem;
+            border-radius: 50%;
+            background: #111;
+            color: #ffdb4d;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            line-height: 1;
+            font-weight: 800;
+        }
+
+        .ai-summary-card {
+            margin-bottom: 1.2rem;
+            border: 1px solid #ecd995;
+            background: #fff9df;
+            border-radius: 1rem;
+            padding: 0.88rem 1rem;
+        }
+
+        .ai-summary-title {
+            margin: 0 0 0.58rem;
+            font-size: 0.98rem;
+            line-height: 1.35;
+        }
+
+        .ai-summary-content {
+            margin: 0;
+            white-space: pre-line;
+            line-height: 1.64;
+        }
+
+        .ai-summary-meta {
+            margin-top: 0.55rem;
+            color: #626262;
+            font-size: 0.83rem;
+        }
+    </style>
 </head>
 <body>
     <input class="theme-toggle" type="radio" name="theme" id="theme-light" checked>
@@ -103,6 +177,8 @@
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbznx3JxKYu81ldsdG3qkdfimPQ6jA0ZuQKYgK8ZK1cG4TfiK6bXazEtqG8M-Lhwx7zbLg/exec";
         const REQUEST_TIMEOUT_MS = 10000;
+        const AI_SUMMARY_API_URL = "https://dreamsite-gigachat-summary.adecvatskiy.workers.dev";
+        const SUMMARY_SENTENCE_LIMIT = 4;
         const IMAGE_LINK_REGEX = /(https?:\/\/[^\s<>"']+)/gi;
         const IMAGE_EXT_REGEX = /\.(?:png|jpe?g|gif|webp|svg)(?:[?#][^\s]*)?$/i;
         const ALLOWED_CONTENT_TAGS = new Set([
@@ -113,6 +189,7 @@
         const params = new URLSearchParams(window.location.search);
         const newsId = Number.parseInt(params.get("id"), 10);
         const contentArea = document.getElementById("news-content");
+        let summaryPending = false;
 
         // --- Логика Лайтбокса ---
         const LIGHTBOX_ANIMATION_MS = 260;
@@ -280,8 +357,8 @@
 
                 if (isLikelyImageUrl(rawUrl)) {
                     const imageUrl = normalizeImageUrl(rawUrl);
-                    // ��������� ������ is-zoomable � ����� ��� ����������� ����������� �������
-                    result += `<img src="${escapeHtml(imageUrl)}" class="article-inline-img is-zoomable" style="cursor: zoom-in;" alt="����������� � �������" loading="lazy" tabindex="0" role="button" aria-label="������� ����">`;
+                    // Помечаем картинку как увеличиваемую через лайтбокс.
+                    result += `<img src="${escapeHtml(imageUrl)}" class="article-inline-img is-zoomable" style="cursor: zoom-in;" alt="Изображение к новости" loading="lazy" tabindex="0" role="button" aria-label="Открыть фото">`;
                 } else {
                     result += plainTextChunkToHtml(rawUrl);
                 }
@@ -395,8 +472,13 @@
                     safeRules.push(`font-weight:${value}`);
                 }
 
-                if (prop === "font-size" && /^(\d+(\.\d+)?)(px|pt|rem|em|%)$/i.test(value)) {
-                    safeRules.push(`font-size:${value}`);
+                if (prop === "font-size") {
+                    const sizeMatch = value.match(/^(\d+(\.\d+)?)(px|pt|rem|em|%)$/i);
+                    if (sizeMatch) {
+                        const size = Number(sizeMatch[1]) * 2;
+                        const unit = sizeMatch[3];
+                        safeRules.push(`font-size:${size}${unit}`);
+                    }
                 }
 
                 if (prop === "font-style" && /^(normal|italic|oblique)$/i.test(value)) {
@@ -459,6 +541,77 @@
             contentArea.innerHTML = `<p class="article-state">${escapeHtml(message)}</p>`;
         }
 
+        function getArticlePlainText() {
+            const body = contentArea.querySelector(".article-body");
+            if (!body) return "";
+            return String(body.innerText || "")
+                .replace(/\r/g, "")
+                .replace(/[ \t]{2,}/g, " ")
+                .replace(/\n{3,}/g, "\n\n")
+                .trim();
+        }
+
+        function localFallbackSummary(text) {
+            const normalized = String(text || "").replace(/\s+/g, " ").trim();
+            if (!normalized) return "Не удалось получить текст для пересказа.";
+            const sentences = normalized
+                .split(/(?<=[.!?])\s+/)
+                .map((s) => s.trim())
+                .filter(Boolean);
+            if (sentences.length <= SUMMARY_SENTENCE_LIMIT) return sentences.join(" ");
+            return sentences.slice(0, SUMMARY_SENTENCE_LIMIT).join(" ");
+        }
+
+        async function requestSummaryFromApi(title, articleText) {
+            const response = await fetch(AI_SUMMARY_API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    title: String(title || "").trim(),
+                    text: String(articleText || "").trim()
+                })
+            });
+            if (!response.ok) {
+                const err = await response.text();
+                throw new Error(`Summary API ${response.status}: ${err.slice(0, 170)}`);
+            }
+            const data = await response.json();
+            const summary = String(data?.summary || "").trim();
+            if (!summary) throw new Error("Пустой ответ от сервиса пересказа.");
+            return summary;
+        }
+
+        function initAiSummary(title, bodySource) {
+            const summaryBtn = contentArea.querySelector("[data-ai-summary-btn]");
+            const card = contentArea.querySelector("[data-ai-summary-card]");
+            const textEl = contentArea.querySelector("[data-ai-summary-content]");
+            const metaEl = contentArea.querySelector("[data-ai-summary-meta]");
+            if (!summaryBtn || !card || !textEl || !metaEl) return;
+
+            summaryBtn.addEventListener("click", async () => {
+                if (summaryPending) return;
+                summaryPending = true;
+                summaryBtn.disabled = true;
+                card.hidden = false;
+                textEl.textContent = "Готовим пересказ...";
+                metaEl.textContent = "";
+
+                const articleText = getArticlePlainText() || String(bodySource || "").trim();
+
+                try {
+                    const summary = await requestSummaryFromApi(title, articleText);
+                    textEl.textContent = summary;
+                    metaEl.textContent = "Пересказ выполнен через GigaChat.";
+                } catch (error) {
+                    textEl.textContent = localFallbackSummary(articleText);
+                    metaEl.textContent = `Сервис пересказа недоступен, показан локальный пересказ: ${error.message}`;
+                } finally {
+                    summaryPending = false;
+                    summaryBtn.disabled = false;
+                }
+            });
+        }
+
         function render(items) {
             if (!Number.isInteger(newsId) || newsId < 0) {
                 renderState("Некорректный номер новости.");
@@ -481,10 +634,22 @@
                     <span class="article-date">${escapeHtml(dateText)}</span>
                     <h1 class="article-title">${escapeHtml(title)}</h1>
                 </header>
+                <div class="ai-summary-tools">
+                    <button class="ai-summary-btn" type="button" data-ai-summary-btn>
+                        <span class="ai-summary-icon" aria-hidden="true">AI</span>
+                        <span>Пересказать</span>
+                    </button>
+                </div>
+                <section class="ai-summary-card" data-ai-summary-card hidden>
+                    <h2 class="ai-summary-title">Краткий ИИ-пересказ</h2>
+                    <p class="ai-summary-content" data-ai-summary-content></p>
+                    <div class="ai-summary-meta" data-ai-summary-meta></div>
+                </section>
                 <div class="article-body">${bodyHtml}</div>
             `;
 
             document.title = `${title} | Школа Мечты`;
+            initAiSummary(title, bodySource);
 
             // Инициализация событий для только что созданных картинок
             const images = contentArea.querySelectorAll('.article-inline-img.is-zoomable');
@@ -540,8 +705,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-

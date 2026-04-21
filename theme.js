@@ -7,6 +7,16 @@
         "theme-contrast": "#000000"
     };
     const MOBILE_HEADER_BREAKPOINT = 1120;
+    const bindMediaQueryChange = (query, handler) => {
+        if (!query || typeof handler !== "function") return;
+        if (typeof query.addEventListener === "function") {
+            query.addEventListener("change", handler);
+            return;
+        }
+        if (typeof query.addListener === "function") {
+            query.addListener(handler);
+        }
+    };
 
     const readSavedTheme = () => {
         try {
@@ -163,7 +173,7 @@
             if (event.key === "Escape") closeMenu();
         });
 
-        mobileQuery.addEventListener("change", syncMobileState);
+        bindMediaQueryChange(mobileQuery, syncMobileState);
         syncMobileState();
     };
 

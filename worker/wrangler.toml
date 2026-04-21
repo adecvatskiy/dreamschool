@@ -1,0 +1,7 @@
+name = "dreamsite-gigachat-summary"
+main = "gigachat-worker.js"
+compatibility_date = "2026-04-20"
+
+[vars]
+GIGACHAT_SCOPE = "GIGACHAT_API_PERS"
+GIGACHAT_MODEL = "GigaChat-2-Max"
