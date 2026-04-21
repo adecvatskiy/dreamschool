@@ -8,80 +8,6 @@
     <meta name="description" content="Подробная страница новости школы.">
     <link rel="stylesheet" href="../style.css">
     <script src="../theme.js" defer></script>
-    <style>
-        .ai-summary-tools {
-            margin: 1rem 0 1.2rem;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.65rem;
-            align-items: center;
-        }
-
-        .ai-summary-btn {
-            border: none;
-            border-radius: 999px;
-            padding: 0.62rem 0.95rem;
-            font-weight: 700;
-            font-size: 0.93rem;
-            cursor: pointer;
-            transition: transform 0.18s ease, opacity 0.18s ease, background-color 0.18s ease;
-            background: #ffdb4d;
-            color: #1e1e1e;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.45rem;
-        }
-
-        .ai-summary-btn:hover {
-            transform: translateY(-1px);
-        }
-
-        .ai-summary-btn:disabled {
-            cursor: wait;
-            opacity: 0.72;
-            transform: none;
-        }
-
-        .ai-summary-icon {
-            width: 1.2rem;
-            height: 1.2rem;
-            border-radius: 50%;
-            background: #111;
-            color: #ffdb4d;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8rem;
-            line-height: 1;
-            font-weight: 800;
-        }
-
-        .ai-summary-card {
-            margin-bottom: 1.2rem;
-            border: 1px solid #ecd995;
-            background: #fff9df;
-            border-radius: 1rem;
-            padding: 0.88rem 1rem;
-        }
-
-        .ai-summary-title {
-            margin: 0 0 0.58rem;
-            font-size: 0.98rem;
-            line-height: 1.35;
-        }
-
-        .ai-summary-content {
-            margin: 0;
-            white-space: pre-line;
-            line-height: 1.64;
-        }
-
-        .ai-summary-meta {
-            margin-top: 0.55rem;
-            color: #626262;
-            font-size: 0.83rem;
-        }
-    </style>
 </head>
 <body>
     <input class="theme-toggle" type="radio" name="theme" id="theme-light" checked>
@@ -167,7 +93,7 @@
                     <div class="map-embed">
                         <a href="https://yandex.ru/maps/11291/prokopevsk/?utm_medium=mapframe&utm_source=maps">Прокопьевск</a>
                         <a href="https://yandex.ru/maps/11291/prokopevsk/house/prospekt_stroiteley_25/bE8YcAVgTUIEQFtpfXR3d3xgZA==/?ll=86.621253%2C53.865942&utm_medium=mapframe&utm_source=maps&z=17.6">Проспект Строителей, 25 — Яндекс Карты</a>
-                        <iframe src="https://yandex.ru/map-widget/v1/?ll=86.621253%2C53.865942&mode=whatshere&whatshere%5Bpoint%5D=86.620582%2C53.865979&whatshere%5Bzoom%5D=17&z=17.6" frameborder="1" allowfullscreen="true"></iframe>
+                        <iframe src="https://yandex.ru/map-widget/v1/?ll=86.621253%2C53.865942&mode=whatshere&whatshere%5Bpoint%5D=86.620582%2C53.865979&whatshere%5Bzoom%5D=17&z=17.6" frameborder="1" allowfullscreen="true" loading="lazy"></iframe>
                     </div>
                 </div>
             </div>
@@ -175,10 +101,18 @@
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbznx3JxKYu81ldsdG3qkdfimPQ6jA0ZuQKYgK8ZK1cG4TfiK6bXazEtqG8M-Lhwx7zbLg/exec";
+        const API_URL = "https://script.google.com/macros/s/AKfycbx7Dxd3YX3j2IDFi0NUreTsBqIxMG3vCwIiCZous-Vn1IlyU28Ews02GVp5U9I9frHrxw/exec";
         const REQUEST_TIMEOUT_MS = 10000;
-        const AI_SUMMARY_API_URL = "https://dreamsite-gigachat-summary.adecvatskiy.workers.dev";
-        const SUMMARY_SENTENCE_LIMIT = 4;
+        const HF_TOKEN = "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";
+        const HF_MODEL_ID = "csebuetnlp/mT5_multilingual_XLSum";
+        const HF_API_URL = `https://router.huggingface.co/hf-inference/models/${HF_MODEL_ID}`;
+        const HF_REQUEST_TIMEOUT_MS = 25000;
+        const SUMMARY_MODES = {
+            short: { label: "Кратко", ratio: 0.35 },
+            detailed: { label: "Подробно", ratio: 0.6 }
+        };
+        const SUMMARY_MIN_WORDS = 28;
+        const SUMMARY_MAX_INPUT_CHARS = 12000;
         const IMAGE_LINK_REGEX = /(https?:\/\/[^\s<>"']+)/gi;
         const IMAGE_EXT_REGEX = /\.(?:png|jpe?g|gif|webp|svg)(?:[?#][^\s]*)?$/i;
         const ALLOWED_CONTENT_TAGS = new Set([
@@ -189,7 +123,9 @@
         const params = new URLSearchParams(window.location.search);
         const newsId = Number.parseInt(params.get("id"), 10);
         const contentArea = document.getElementById("news-content");
-        let summaryPending = false;
+        let currentSummarySourceText = "";
+        let currentSummaryMode = "";
+        let summaryRequestId = 0;
 
         // --- Логика Лайтбокса ---
         const LIGHTBOX_ANIMATION_MS = 260;
@@ -541,73 +477,269 @@
             contentArea.innerHTML = `<p class="article-state">${escapeHtml(message)}</p>`;
         }
 
-        function getArticlePlainText() {
-            const body = contentArea.querySelector(".article-body");
-            if (!body) return "";
-            return String(body.innerText || "")
-                .replace(/\r/g, "")
-                .replace(/[ \t]{2,}/g, " ")
-                .replace(/\n{3,}/g, "\n\n")
-                .trim();
+        function normalizeForSummary(text) {
+            return String(text ?? "").replace(/\s+/g, " ").trim();
         }
 
-        function localFallbackSummary(text) {
-            const normalized = String(text || "").replace(/\s+/g, " ").trim();
-            if (!normalized) return "Не удалось получить текст для пересказа.";
-            const sentences = normalized
+        function countWords(text) {
+            const normalized = normalizeForSummary(text);
+            if (!normalized) return 0;
+            return normalized.split(" ").length;
+        }
+
+        function extractPlainTextForSummary(source) {
+            const text = String(source ?? "");
+            if (!text) return "";
+
+            if (hasHtmlMarkup(text)) {
+                const parser = new DOMParser();
+                const parsed = parser.parseFromString(`<div>${text}</div>`, "text/html");
+                return normalizeForSummary(parsed.body.textContent || "");
+            }
+
+            return normalizeForSummary(decodeHtmlEntities(text));
+        }
+
+        function trimToWordLimit(text, maxWords) {
+            const words = normalizeForSummary(text).split(" ").filter(Boolean);
+            if (words.length <= maxWords) return words.join(" ");
+            return `${words.slice(0, maxWords).join(" ")}…`;
+        }
+
+        function splitIntoSentences(text) {
+            const normalized = normalizeForSummary(text);
+            if (!normalized) return [];
+            return normalized
                 .split(/(?<=[.!?])\s+/)
                 .map((s) => s.trim())
                 .filter(Boolean);
-            if (sentences.length <= SUMMARY_SENTENCE_LIMIT) return sentences.join(" ");
-            return sentences.slice(0, SUMMARY_SENTENCE_LIMIT).join(" ");
         }
 
-        async function requestSummaryFromApi(title, articleText) {
-            const response = await fetch(AI_SUMMARY_API_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    title: String(title || "").trim(),
-                    text: String(articleText || "").trim()
-                })
+        function wordsFromText(text) {
+            return normalizeForSummary(text)
+                .toLowerCase()
+                .replace(/[^a-zа-яё0-9\s-]/gi, " ")
+                .split(/\s+/)
+                .filter((w) => w.length > 2);
+        }
+
+        function sentenceSupportScore(sentence, sourceWordSet) {
+            const words = wordsFromText(sentence);
+            if (!words.length) return 0;
+            let hits = 0;
+            words.forEach((w) => {
+                if (sourceWordSet.has(w)) hits += 1;
             });
-            if (!response.ok) {
-                const err = await response.text();
-                throw new Error(`Summary API ${response.status}: ${err.slice(0, 170)}`);
-            }
-            const data = await response.json();
-            const summary = String(data?.summary || "").trim();
-            if (!summary) throw new Error("Пустой ответ от сервиса пересказа.");
-            return summary;
+            return hits / words.length;
         }
 
-        function initAiSummary(title, bodySource) {
-            const summaryBtn = contentArea.querySelector("[data-ai-summary-btn]");
-            const card = contentArea.querySelector("[data-ai-summary-card]");
-            const textEl = contentArea.querySelector("[data-ai-summary-content]");
-            const metaEl = contentArea.querySelector("[data-ai-summary-meta]");
-            if (!summaryBtn || !card || !textEl || !metaEl) return;
+        function buildExtractiveSummary(sourceText, targetWords, maxWords) {
+            const sentences = splitIntoSentences(sourceText);
+            if (!sentences.length) return "";
 
-            summaryBtn.addEventListener("click", async () => {
-                if (summaryPending) return;
-                summaryPending = true;
-                summaryBtn.disabled = true;
-                card.hidden = false;
-                textEl.textContent = "Готовим пересказ...";
-                metaEl.textContent = "";
+            let currentWords = 0;
+            const collected = [];
+            for (const sentence of sentences) {
+                const sentenceWords = countWords(sentence);
+                if (!sentenceWords) continue;
+                collected.push(sentence);
+                currentWords += sentenceWords;
+                if (currentWords >= targetWords) break;
+            }
 
-                const articleText = getArticlePlainText() || String(bodySource || "").trim();
+            const raw = collected.join(" ");
+            return trimToWordLimit(raw, maxWords);
+        }
 
-                try {
-                    const summary = await requestSummaryFromApi(title, articleText);
-                    textEl.textContent = summary;
-                    metaEl.textContent = "Пересказ выполнен через GigaChat.";
-                } catch (error) {
-                    textEl.textContent = localFallbackSummary(articleText);
-                    metaEl.textContent = `Сервис пересказа недоступен, показан локальный пересказ: ${error.message}`;
-                } finally {
-                    summaryPending = false;
-                    summaryBtn.disabled = false;
+        function keepOnlyGroundedSentences(summaryText, sourceText, targetWords, maxWords) {
+            const sourceWordSet = new Set(wordsFromText(sourceText));
+            const summarySentences = splitIntoSentences(summaryText);
+            if (!summarySentences.length) return "";
+
+            const grounded = summarySentences.filter((sentence) => sentenceSupportScore(sentence, sourceWordSet) >= 0.62);
+            if (!grounded.length) {
+                return buildExtractiveSummary(sourceText, targetWords, maxWords);
+            }
+
+            const groundedText = grounded.join(" ");
+            if (countWords(groundedText) < Math.max(14, Math.round(targetWords * 0.5))) {
+                return buildExtractiveSummary(sourceText, targetWords, maxWords);
+            }
+            return trimToWordLimit(groundedText, maxWords);
+        }
+
+        async function fetchSummary(sourceText, modeKey) {
+            if (window.location.protocol === "file:") {
+                throw new Error("Страница открыта как file://. Запустите сайт через http://localhost, иначе браузер блокирует запрос.");
+            }
+
+            const normalized = normalizeForSummary(sourceText).slice(0, SUMMARY_MAX_INPUT_CHARS);
+            const sourceWordCount = countWords(normalized);
+            if (sourceWordCount < SUMMARY_MIN_WORDS) {
+                return "Текст слишком короткий для отдельного пересказа.";
+            }
+
+            const mode = SUMMARY_MODES[modeKey] || SUMMARY_MODES.short;
+            const targetWords = Math.max(SUMMARY_MIN_WORDS, Math.round(sourceWordCount * mode.ratio));
+            const minWords = Math.max(18, Math.round(targetWords * 0.85));
+            const maxWords = Math.max(minWords + 8, Math.round(targetWords * 1.15));
+            const minTokens = Math.max(30, Math.round(minWords * 1.7));
+            const maxTokens = Math.max(minTokens + 12, Math.round(maxWords * 1.7));
+
+            const controller = new AbortController();
+            const timeoutId = window.setTimeout(() => controller.abort(), HF_REQUEST_TIMEOUT_MS);
+            let response;
+            try {
+                response = await fetch(HF_API_URL, {
+                    method: "POST",
+                    mode: "cors",
+                    headers: {
+                        "Authorization": `Bearer ${HF_TOKEN}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        inputs: `Сделай пересказ только по исходному тексту. Не добавляй фактов, которых нет в тексте.\n\nТекст:\n${normalized}`,
+                        parameters: {
+                            min_length: minTokens,
+                            max_length: maxTokens,
+                            do_sample: false,
+                            temperature: 0.1,
+                            top_p: 0.85,
+                            no_repeat_ngram_size: 3
+                        },
+                        options: {
+                            wait_for_model: true,
+                            use_cache: false
+                        }
+                    }),
+                    signal: controller.signal
+                });
+            } catch (error) {
+                if (error?.name === "AbortError") {
+                    throw new Error("Таймаут запроса к Hugging Face. Попробуйте еще раз.");
+                }
+                throw new Error("Сеть/CORS блокирует запрос к Hugging Face. Проверьте запуск через http://localhost и доступ к huggingface.co.");
+            } finally {
+                window.clearTimeout(timeoutId);
+            }
+
+            const payload = await response.json().catch(() => null);
+            if (!response.ok) {
+                const errorText = payload?.error || `HTTP ${response.status}`;
+                throw new Error(errorText);
+            }
+
+            let summary = "";
+            if (Array.isArray(payload) && payload[0]?.summary_text) summary = payload[0].summary_text;
+            else if (Array.isArray(payload) && payload[0]?.generated_text) summary = payload[0].generated_text;
+            else if (payload?.summary_text) summary = payload.summary_text;
+            else if (typeof payload === "string") summary = payload;
+
+            summary = normalizeForSummary(summary);
+            if (!summary) {
+                throw new Error("Пустой ответ модели.");
+            }
+
+            return keepOnlyGroundedSentences(summary, normalized, targetWords, maxWords);
+        }
+
+        function renderSummaryState(message) {
+            const summaryText = contentArea.querySelector("[data-summary-text]");
+            if (summaryText) summaryText.textContent = message;
+        }
+
+        function setSummaryLoading(isLoading) {
+            const toggleButton = contentArea.querySelector("[data-summary-toggle]");
+            const modeButtons = contentArea.querySelectorAll("[data-summary-mode]");
+            if (toggleButton) toggleButton.disabled = isLoading;
+            modeButtons.forEach((button) => {
+                button.disabled = isLoading;
+            });
+        }
+
+        function setSummaryMode(nextMode) {
+            const mode = SUMMARY_MODES[nextMode] ? nextMode : "";
+            currentSummaryMode = mode;
+            const modeButtons = contentArea.querySelectorAll("[data-summary-mode]");
+            const modeSwitch = contentArea.querySelector("[data-summary-switch]");
+
+            modeButtons.forEach((btn) => btn.setAttribute("aria-pressed", String(btn.getAttribute("data-summary-mode") === mode)));
+            if (modeSwitch) modeSwitch.dataset.mode = mode || "none";
+        }
+
+        function setSummaryPanelState(isOpen) {
+            const summaryShell = contentArea.querySelector("[data-summary-shell]");
+            const toggleButton = contentArea.querySelector("[data-summary-toggle]");
+            if (!summaryShell || !toggleButton) return;
+
+            summaryShell.classList.toggle("is-open", isOpen);
+            toggleButton.setAttribute("aria-expanded", String(isOpen));
+        }
+
+        async function requestSummary() {
+            const summaryText = contentArea.querySelector("[data-summary-text]");
+            if (!summaryText) return;
+
+            if (!currentSummarySourceText) {
+                renderSummaryState("Нет текста для пересказа.");
+                return;
+            }
+            if (!currentSummaryMode || !SUMMARY_MODES[currentSummaryMode]) {
+                renderSummaryState("Сначала выберите режим пересказа: «Кратко» или «Подробно».");
+                return;
+            }
+
+            const requestId = ++summaryRequestId;
+            setSummaryLoading(true);
+            renderSummaryState(`Готовим пересказ: ${SUMMARY_MODES[currentSummaryMode].label}...`);
+
+            try {
+                const summary = await fetchSummary(currentSummarySourceText, currentSummaryMode);
+                if (requestId !== summaryRequestId) return;
+                renderSummaryState(summary);
+                summaryText.dataset.loadedMode = currentSummaryMode;
+            } catch (error) {
+                if (requestId !== summaryRequestId) return;
+                renderSummaryState(`Не удалось получить пересказ: ${error.message || "неизвестная ошибка"}`);
+            } finally {
+                if (requestId === summaryRequestId) {
+                    setSummaryLoading(false);
+                }
+            }
+        }
+
+        function attachSummaryHandler() {
+            const toggleButton = contentArea.querySelector("[data-summary-toggle]");
+            const summaryText = contentArea.querySelector("[data-summary-text]");
+            const summaryShell = contentArea.querySelector("[data-summary-shell]");
+            const modeButtons = contentArea.querySelectorAll("[data-summary-mode]");
+            if (!toggleButton || !summaryText || !summaryShell) return;
+
+            modeButtons.forEach((button) => {
+                button.addEventListener("click", () => {
+                    const nextMode = button.getAttribute("data-summary-mode");
+                    if (!nextMode || !SUMMARY_MODES[nextMode]) return;
+                    if (currentSummaryMode === nextMode) return;
+                    setSummaryMode(nextMode);
+
+                    if (summaryShell.classList.contains("is-open")) {
+                        requestSummary();
+                    }
+                });
+            });
+
+            toggleButton.addEventListener("click", () => {
+                const isOpen = !summaryShell.classList.contains("is-open");
+                setSummaryPanelState(isOpen);
+                if (isOpen) {
+                    if (!currentSummaryMode) {
+                        renderSummaryState("Выберите режим: «Кратко» или «Подробно».");
+                        return;
+                    }
+                    const loadedMode = summaryText.dataset.loadedMode || "";
+                    if (loadedMode !== currentSummaryMode) {
+                        requestSummary();
+                    }
                 }
             });
         }
@@ -628,28 +760,34 @@
             const dateText = formatDate(item.date || item["Дата"] || "");
             const bodySource = item.content || item.preview || item["Текст"] || "";
             const bodyHtml = buildArticleBody(bodySource);
+            currentSummarySourceText = extractPlainTextForSummary(bodySource);
+            currentSummaryMode = "";
+            summaryRequestId = 0;
 
             contentArea.innerHTML = `
                 <header class="article-header">
                     <span class="article-date">${escapeHtml(dateText)}</span>
                     <h1 class="article-title">${escapeHtml(title)}</h1>
                 </header>
-                <div class="ai-summary-tools">
-                    <button class="ai-summary-btn" type="button" data-ai-summary-btn>
-                        <span class="ai-summary-icon" aria-hidden="true">AI</span>
-                        <span>Пересказать</span>
+                <section class="article-summary-shell" data-summary-shell>
+                    <button type="button" class="article-summary-toggle" data-summary-toggle aria-expanded="false" aria-controls="summary-panel">
+                        <span>Пересказ</span>
                     </button>
-                </div>
-                <section class="ai-summary-card" data-ai-summary-card hidden>
-                    <h2 class="ai-summary-title">Краткий ИИ-пересказ</h2>
-                    <p class="ai-summary-content" data-ai-summary-content></p>
-                    <div class="ai-summary-meta" data-ai-summary-meta></div>
+                    <div class="article-summary-panel" id="summary-panel">
+                        <div class="article-summary-panel__inner">
+                            <div class="article-summary-switch" data-summary-switch data-mode="none" role="tablist" aria-label="Режим пересказа">
+                                <button type="button" data-summary-mode="short" aria-pressed="false">Кратко</button>
+                                <button type="button" data-summary-mode="detailed" aria-pressed="false">Подробно</button>
+                            </div>
+                            <p data-summary-text class="article-summary-text">Сначала выберите режим, затем начнется работа модели.</p>
+                        </div>
+                    </div>
                 </section>
                 <div class="article-body">${bodyHtml}</div>
             `;
 
             document.title = `${title} | Школа Мечты`;
-            initAiSummary(title, bodySource);
+            setSummaryMode("");
 
             // Инициализация событий для только что созданных картинок
             const images = contentArea.querySelectorAll('.article-inline-img.is-zoomable');
@@ -662,6 +800,8 @@
                     }
                 });
             });
+
+            attachSummaryHandler();
         }
 
         function loadNews() {
