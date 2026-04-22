@@ -58,6 +58,8 @@
 
         <div class="photo-lightbox" data-lightbox hidden>
             <div class="photo-lightbox__dialog" role="dialog" aria-modal="true" aria-label="Просмотр фото">
+                <button class="photo-lightbox__nav photo-lightbox__nav--prev" type="button" aria-label="Предыдущее фото" data-lightbox-prev>&larr;</button>
+                <button class="photo-lightbox__nav photo-lightbox__nav--next" type="button" aria-label="Следующее фото" data-lightbox-next>&rarr;</button>
                 <button class="photo-lightbox__close" type="button" aria-label="Закрыть фото" data-close-lightbox>×</button>
                 <img class="photo-lightbox__image" src="" alt="" data-lightbox-image>
             </div>
@@ -120,11 +122,29 @@
         const lightbox = document.querySelector("[data-lightbox]");
         const lightboxImage = document.querySelector("[data-lightbox-image]");
         const closeLightboxButton = document.querySelector("[data-close-lightbox]");
+        const prevLightboxButton = document.querySelector("[data-lightbox-prev]");
+        const nextLightboxButton = document.querySelector("[data-lightbox-next]");
         let lightboxHideTimer = 0;
+        let activeGalleryImages = [];
+        let activeGalleryIndex = -1;
 
         const syncBodyLock = () => {
             const isLightboxOpen = Boolean(lightbox && !lightbox.hidden);
             document.body.classList.toggle("modal-open", isLightboxOpen);
+        };
+
+        const syncLightboxNavigation = () => {
+            const hasGallery = activeGalleryImages.length > 1;
+            if (prevLightboxButton) prevLightboxButton.hidden = !hasGallery;
+            if (nextLightboxButton) nextLightboxButton.hidden = !hasGallery;
+        };
+
+        const openGalleryImage = (index) => {
+            if (!activeGalleryImages.length) return;
+            const normalizedIndex = ((index % activeGalleryImages.length) + activeGalleryImages.length) % activeGalleryImages.length;
+            activeGalleryIndex = normalizedIndex;
+            const image = activeGalleryImages[normalizedIndex];
+            setLightboxState(true, image);
         };
 
         const setLightboxState = (isOpen, image = null) => {
@@ -133,6 +153,10 @@
             if (isOpen && image) {
                 lightboxImage.src = image.src;
                 lightboxImage.alt = image.alt || "Увеличенное изображение";
+                if (image.dataset.galleryIndex) {
+                    activeGalleryIndex = Number.parseInt(image.dataset.galleryIndex, 10);
+                }
+                syncLightboxNavigation();
                 lightbox.hidden = false;
                 lightbox.classList.remove("is-closing");
                 requestAnimationFrame(() => lightbox.classList.add("is-visible"));
@@ -147,12 +171,23 @@
                 lightbox.classList.remove("is-closing");
                 lightboxImage.src = "";
                 lightboxImage.alt = "";
+                activeGalleryIndex = -1;
                 syncBodyLock();
             }, LIGHTBOX_ANIMATION_MS);
         };
 
         if (closeLightboxButton && lightbox) {
             closeLightboxButton.addEventListener("click", () => setLightboxState(false));
+            prevLightboxButton?.addEventListener("click", (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                openGalleryImage(activeGalleryIndex - 1);
+            });
+            nextLightboxButton?.addEventListener("click", (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                openGalleryImage(activeGalleryIndex + 1);
+            });
             lightbox.addEventListener("click", (event) => {
                 if (event.target === lightbox) {
                     setLightboxState(false);
@@ -161,6 +196,19 @@
             document.addEventListener("keydown", (event) => {
                 if (event.key === "Escape" && !lightbox.hidden) {
                     setLightboxState(false);
+                    return;
+                }
+
+                if (lightbox.hidden || activeGalleryImages.length <= 1) return;
+
+                if (event.key === "ArrowLeft") {
+                    event.preventDefault();
+                    openGalleryImage(activeGalleryIndex - 1);
+                }
+
+                if (event.key === "ArrowRight") {
+                    event.preventDefault();
+                    openGalleryImage(activeGalleryIndex + 1);
                 }
             });
         }
@@ -387,6 +435,8 @@
         }
 
         function sanitizeRichContent(root) {
+            transformPullQuoteMarkers(root);
+
             const walk = (node) => {
                 if (!node) return;
 
@@ -438,16 +488,9 @@
                 if (node.querySelector("img, blockquote, table, ul, ol")) return;
 
                 const html = String(node.innerHTML || "");
-                const directPullQuoteText = extractPullQuoteText(html.replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, ""));
-                let replacedHtml = html;
-
-                if (directPullQuoteText) {
-                    replacedHtml = buildPullQuoteHtml(directPullQuoteText);
-                } else {
-                    replacedHtml = html.replace(/\|\s*([\s\S]*?)\s*\|/g, (_, quoteText) => {
-                        return buildPullQuoteHtml(quoteText);
-                    });
-                }
+                const replacedHtml = html.replace(/\|\s*([\s\S]*?)\s*\|/g, (_, quoteText) => {
+                    return buildPullQuoteHtml(quoteText);
+                });
 
                 if (replacedHtml !== html) {
                     node.outerHTML = replacedHtml;
@@ -483,6 +526,82 @@
                 img.setAttribute("role", "button");
                 img.setAttribute("aria-label", "Открыть фото");
                 link.replaceWith(img);
+            });
+        }
+
+        function extractArticleImages(root) {
+            if (!root) return [];
+            return Array.from(root.querySelectorAll("img.article-inline-img.is-zoomable"));
+        }
+
+        function renderArticleGallery(root, images) {
+            if (!root) return;
+
+            const existingGallery = root.querySelector(".article-gallery");
+            existingGallery?.remove();
+
+            if (!Array.isArray(images) || images.length <= 1) {
+                activeGalleryImages = images || [];
+                activeGalleryImages.forEach((img, index) => {
+                    img.dataset.galleryIndex = String(index);
+                });
+                syncLightboxNavigation();
+                return;
+            }
+
+            images.forEach((image, index) => {
+                image.dataset.galleryIndex = String(index);
+            });
+
+            const gallery = document.createElement("section");
+            gallery.className = "article-gallery";
+            gallery.innerHTML = `
+                <h2 class="article-gallery__title">Фотографии</h2>
+                <div class="article-gallery__grid"></div>
+            `;
+
+            const galleryGrid = gallery.querySelector(".article-gallery__grid");
+            const galleryImages = [];
+
+            images.forEach((image, index) => {
+                const galleryButton = document.createElement("button");
+                galleryButton.type = "button";
+                galleryButton.className = "article-gallery__item";
+                galleryButton.setAttribute("aria-label", `Открыть фото ${index + 1}`);
+
+                const galleryImage = image.cloneNode(true);
+                galleryImage.dataset.galleryIndex = String(index);
+                galleryButton.appendChild(galleryImage);
+                galleryGrid.appendChild(galleryButton);
+                galleryImages.push(galleryImage);
+            });
+
+            root.appendChild(gallery);
+            activeGalleryImages = galleryImages;
+            syncLightboxNavigation();
+        }
+
+        function bindZoomableImages(root) {
+            if (!root) return;
+
+            const images = root.querySelectorAll(".article-inline-img.is-zoomable");
+            images.forEach((img, index) => {
+                if (!img.dataset.galleryIndex) {
+                    img.dataset.galleryIndex = String(index);
+                }
+
+                img.addEventListener("click", (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setLightboxState(true, img);
+                });
+                img.addEventListener("keydown", (event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setLightboxState(true, img);
+                    }
+                });
             });
         }
 
@@ -633,25 +752,11 @@
             const articleBody = contentArea.querySelector(".article-body");
             transformPullQuoteMarkers(articleBody);
             normalizeZoomableMedia(articleBody);
+            const articleImages = extractArticleImages(articleBody);
+            renderArticleGallery(articleBody, articleImages);
+            bindZoomableImages(contentArea);
 
             document.title = `${title} | Школа Мечты`;
-
-            // Инициализация событий для только что созданных картинок
-            const images = contentArea.querySelectorAll('.article-inline-img.is-zoomable');
-            images.forEach((img) => {
-                img.addEventListener("click", (event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    setLightboxState(true, img);
-                });
-                img.addEventListener("keydown", (event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        setLightboxState(true, img);
-                    }
-                });
-            });
         }
 
         function loadNews() {
