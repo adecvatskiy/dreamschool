@@ -47,7 +47,7 @@
         <main class="news-detail-page">
             <section class="section">
                 <div class="container">
-                    <a href="../index2.html" class="news-back-link" aria-label="К списку новостей" title="К списку новостей">&larr;</a>
+                    <a href="../index2.html" class="news-back-link" id="news-back-link" aria-label="К списку новостей" title="К списку новостей">&larr;</a>
 
                     <article class="article-wrap" id="news-content">
                         <p class="article-state loading-dots">Загружаем новость</p>
@@ -101,18 +101,8 @@
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbx7Dxd3YX3j2IDFi0NUreTsBqIxMG3vCwIiCZous-Vn1IlyU28Ews02GVp5U9I9frHrxw/exec";
+        const API_URL = "https://script.google.com/macros/s/AKfycbwzhsf0fq5EMIqeaCElq79EYkTqUdNxHW3SD1KfKMUaDGdCM4iZEkcozbzUql7ToaN5Qg/exec";
         const REQUEST_TIMEOUT_MS = 10000;
-        const HF_TOKEN = "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";
-        const HF_MODEL_ID = "csebuetnlp/mT5_multilingual_XLSum";
-        const HF_API_URL = `https://router.huggingface.co/hf-inference/models/${HF_MODEL_ID}`;
-        const HF_REQUEST_TIMEOUT_MS = 25000;
-        const SUMMARY_MODES = {
-            short: { label: "Кратко", ratio: 0.35 },
-            detailed: { label: "Подробно", ratio: 0.6 }
-        };
-        const SUMMARY_MIN_WORDS = 28;
-        const SUMMARY_MAX_INPUT_CHARS = 12000;
         const IMAGE_LINK_REGEX = /(https?:\/\/[^\s<>"']+)/gi;
         const IMAGE_EXT_REGEX = /\.(?:png|jpe?g|gif|webp|svg)(?:[?#][^\s]*)?$/i;
         const ALLOWED_CONTENT_TAGS = new Set([
@@ -123,9 +113,7 @@
         const params = new URLSearchParams(window.location.search);
         const newsId = Number.parseInt(params.get("id"), 10);
         const contentArea = document.getElementById("news-content");
-        let currentSummarySourceText = "";
-        let currentSummaryMode = "";
-        let summaryRequestId = 0;
+        const backLink = document.getElementById("news-back-link");
 
         // --- Логика Лайтбокса ---
         const LIGHTBOX_ANIMATION_MS = 260;
@@ -173,6 +161,24 @@
             document.addEventListener("keydown", (event) => {
                 if (event.key === "Escape" && !lightbox.hidden) {
                     setLightboxState(false);
+                }
+            });
+        }
+
+        if (backLink) {
+            backLink.addEventListener("click", (event) => {
+                try {
+                    const referrer = document.referrer ? new URL(document.referrer) : null;
+                    const isFromNewsList = referrer
+                        && referrer.origin === window.location.origin
+                        && /\/index2\.html$/i.test(referrer.pathname);
+
+                    if (isFromNewsList && window.history.length > 1) {
+                        event.preventDefault();
+                        window.history.back();
+                    }
+                } catch {
+                    // Если referrer некорректен, оставляем обычный переход по href.
                 }
             });
         }
@@ -249,18 +255,87 @@
             return escaped;
         }
 
+        function buildPullQuoteHtml(quoteText) {
+            const normalized = String(quoteText ?? "").replace(/\r\n?/g, "\n").trim();
+            if (!normalized) return "";
+
+            const content = normalized
+                .split("\n")
+                .map((line) => escapeLineWithSpaces(line))
+                .join("<br>");
+
+            return `<blockquote class="article-pullquote"><p>${content}</p></blockquote>`;
+        }
+
+        function extractPullQuoteText(text) {
+            const normalized = String(text ?? "")
+                .replace(/&nbsp;/gi, " ")
+                .replace(/\r\n?/g, "\n")
+                .trim();
+            if (!normalized.startsWith("|")) return "";
+
+            const withoutOpening = normalized.slice(1).trim();
+            const withoutClosing = withoutOpening.replace(/\s*\|\s*$/, "").trim();
+
+            return withoutClosing;
+        }
+
+        function tokenizePlainText(text) {
+            const source = String(text ?? "");
+            const tokens = [];
+            const tokenRegex = /(\|[\s\S]*?\|)|(https?:\/\/[^\s<>"']+)/gi;
+            let lastIndex = 0;
+            let match;
+
+            while ((match = tokenRegex.exec(source)) !== null) {
+                const matchedText = match[0];
+                const matchIndex = match.index;
+
+                if (matchIndex > lastIndex) {
+                    tokens.push({ type: "text", value: source.slice(lastIndex, matchIndex) });
+                }
+
+                if (matchedText.startsWith("|") && matchedText.endsWith("|")) {
+                    const quoteText = matchedText.slice(1, -1).trim();
+                    if (quoteText) {
+                        tokens.push({ type: "quote", value: quoteText });
+                    } else {
+                        tokens.push({ type: "text", value: matchedText });
+                    }
+                } else {
+                    tokens.push({ type: "url", value: matchedText });
+                }
+
+                lastIndex = matchIndex + matchedText.length;
+            }
+
+            if (lastIndex < source.length) {
+                tokens.push({ type: "text", value: source.slice(lastIndex) });
+            }
+
+            return tokens;
+        }
+
         function plainTextChunkToHtml(text) {
             const normalized = String(text ?? "").replace(/\r\n?/g, "\n");
             if (!normalized.trim()) return "";
 
             return normalized
                 .split(/\n{2,}/)
-                .map((paragraph) => paragraph
-                    .split("\n")
-                    .map((line) => escapeLineWithSpaces(line))
-                    .join("<br>"))
+                .map((paragraph) => {
+                    const pullQuoteText = extractPullQuoteText(paragraph);
+                    if (pullQuoteText) {
+                        return buildPullQuoteHtml(pullQuoteText);
+                    }
+
+                    const paragraphHtml = paragraph
+                        .split("\n")
+                        .map((line) => escapeLineWithSpaces(line))
+                        .join("<br>");
+
+                    return paragraphHtml.trim() ? `<p>${paragraphHtml}</p>` : "";
+                })
                 .filter((paragraph) => paragraph.trim() !== "")
-                .map((paragraph) => `<p>${paragraph}</p>`)
                 .join("");
         }
 
@@ -280,30 +355,25 @@
                 }
             }
 
-            let result = "";
-            let lastIndex = 0;
-            let match;
             const text = decodedCandidate;
+            return tokenizePlainText(text)
+                .map((token) => {
+                    if (token.type === "quote") {
+                        return buildPullQuoteHtml(token.value);
+                    }
 
-            while ((match = IMAGE_LINK_REGEX.exec(text)) !== null) {
-                const rawUrl = match[0];
-                const matchIndex = match.index;
-                const before = text.slice(lastIndex, matchIndex);
-                result += plainTextChunkToHtml(before);
+                    if (token.type === "url") {
+                        if (isLikelyImageUrl(token.value)) {
+                            const imageUrl = normalizeImageUrl(token.value);
+                            return `<img src="${escapeHtml(imageUrl)}" class="article-inline-img is-zoomable" style="cursor: zoom-in;" alt="Изображение к новости" loading="lazy" tabindex="0" role="button" aria-label="Открыть фото">`;
+                        }
 
-                if (isLikelyImageUrl(rawUrl)) {
-                    const imageUrl = normalizeImageUrl(rawUrl);
-                    // Помечаем картинку как увеличиваемую через лайтбокс.
-                    result += `<img src="${escapeHtml(imageUrl)}" class="article-inline-img is-zoomable" style="cursor: zoom-in;" alt="Изображение к новости" loading="lazy" tabindex="0" role="button" aria-label="Открыть фото">`;
-                } else {
-                    result += plainTextChunkToHtml(rawUrl);
-                }
+                        return plainTextChunkToHtml(token.value);
+                    }
 
-                lastIndex = matchIndex + rawUrl.length;
-            }
-
-            result += plainTextChunkToHtml(text.slice(lastIndex));
-            return result;
+                    return plainTextChunkToHtml(token.value);
+                })
+                .join("");
         }
 
         function buildArticleBodyFromHtml(rawHtml) {
@@ -356,6 +426,64 @@
             };
 
             Array.from(root.childNodes).forEach(walk);
+        }
+
+        function transformPullQuoteMarkers(root) {
+            if (!root) return;
+
+            const candidates = root.querySelectorAll("p, div, li, span");
+
+            candidates.forEach((node) => {
+                if (!node.parentNode) return;
+                if (node.querySelector("img, blockquote, table, ul, ol")) return;
+
+                const html = String(node.innerHTML || "");
+                const directPullQuoteText = extractPullQuoteText(html.replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, ""));
+                let replacedHtml = html;
+
+                if (directPullQuoteText) {
+                    replacedHtml = buildPullQuoteHtml(directPullQuoteText);
+                } else {
+                    replacedHtml = html.replace(/\|\s*([\s\S]*?)\s*\|/g, (_, quoteText) => {
+                        return buildPullQuoteHtml(quoteText);
+                    });
+                }
+
+                if (replacedHtml !== html) {
+                    node.outerHTML = replacedHtml;
+                }
+            });
+        }
+
+        function normalizeZoomableMedia(root) {
+            if (!root) return;
+
+            const imageLinks = root.querySelectorAll("a[href]");
+            imageLinks.forEach((link) => {
+                const href = String(link.getAttribute("href") || "").trim();
+                if (!isLikelyImageUrl(href)) return;
+
+                const linkedImage = link.querySelector("img.article-inline-img");
+                if (linkedImage) {
+                    link.replaceWith(linkedImage);
+                    return;
+                }
+
+                const linkText = String(link.textContent || "").trim();
+                if (!linkText) return;
+
+                const imageUrl = normalizeImageUrl(href);
+                const img = document.createElement("img");
+                img.src = imageUrl;
+                img.className = "article-inline-img is-zoomable";
+                img.style.cursor = "zoom-in";
+                img.alt = "Изображение к новости";
+                img.loading = "lazy";
+                img.tabIndex = 0;
+                img.setAttribute("role", "button");
+                img.setAttribute("aria-label", "Открыть фото");
+                link.replaceWith(img);
+            });
         }
 
         function sanitizeElementAttributes(node) {
@@ -477,273 +605,6 @@
             contentArea.innerHTML = `<p class="article-state">${escapeHtml(message)}</p>`;
         }
 
-        function normalizeForSummary(text) {
-            return String(text ?? "").replace(/\s+/g, " ").trim();
-        }
-
-        function countWords(text) {
-            const normalized = normalizeForSummary(text);
-            if (!normalized) return 0;
-            return normalized.split(" ").length;
-        }
-
-        function extractPlainTextForSummary(source) {
-            const text = String(source ?? "");
-            if (!text) return "";
-
-            if (hasHtmlMarkup(text)) {
-                const parser = new DOMParser();
-                const parsed = parser.parseFromString(`<div>${text}</div>`, "text/html");
-                return normalizeForSummary(parsed.body.textContent || "");
-            }
-
-            return normalizeForSummary(decodeHtmlEntities(text));
-        }
-
-        function trimToWordLimit(text, maxWords) {
-            const words = normalizeForSummary(text).split(" ").filter(Boolean);
-            if (words.length <= maxWords) return words.join(" ");
-            return `${words.slice(0, maxWords).join(" ")}…`;
-        }
-
-        function splitIntoSentences(text) {
-            const normalized = normalizeForSummary(text);
-            if (!normalized) return [];
-            return normalized
-                .split(/(?<=[.!?])\s+/)
-                .map((s) => s.trim())
-                .filter(Boolean);
-        }
-
-        function wordsFromText(text) {
-            return normalizeForSummary(text)
-                .toLowerCase()
-                .replace(/[^a-zа-яё0-9\s-]/gi, " ")
-                .split(/\s+/)
-                .filter((w) => w.length > 2);
-        }
-
-        function sentenceSupportScore(sentence, sourceWordSet) {
-            const words = wordsFromText(sentence);
-            if (!words.length) return 0;
-            let hits = 0;
-            words.forEach((w) => {
-                if (sourceWordSet.has(w)) hits += 1;
-            });
-            return hits / words.length;
-        }
-
-        function buildExtractiveSummary(sourceText, targetWords, maxWords) {
-            const sentences = splitIntoSentences(sourceText);
-            if (!sentences.length) return "";
-
-            let currentWords = 0;
-            const collected = [];
-            for (const sentence of sentences) {
-                const sentenceWords = countWords(sentence);
-                if (!sentenceWords) continue;
-                collected.push(sentence);
-                currentWords += sentenceWords;
-                if (currentWords >= targetWords) break;
-            }
-
-            const raw = collected.join(" ");
-            return trimToWordLimit(raw, maxWords);
-        }
-
-        function keepOnlyGroundedSentences(summaryText, sourceText, targetWords, maxWords) {
-            const sourceWordSet = new Set(wordsFromText(sourceText));
-            const summarySentences = splitIntoSentences(summaryText);
-            if (!summarySentences.length) return "";
-
-            const grounded = summarySentences.filter((sentence) => sentenceSupportScore(sentence, sourceWordSet) >= 0.62);
-            if (!grounded.length) {
-                return buildExtractiveSummary(sourceText, targetWords, maxWords);
-            }
-
-            const groundedText = grounded.join(" ");
-            if (countWords(groundedText) < Math.max(14, Math.round(targetWords * 0.5))) {
-                return buildExtractiveSummary(sourceText, targetWords, maxWords);
-            }
-            return trimToWordLimit(groundedText, maxWords);
-        }
-
-        async function fetchSummary(sourceText, modeKey) {
-            if (window.location.protocol === "file:") {
-                throw new Error("Страница открыта как file://. Запустите сайт через http://localhost, иначе браузер блокирует запрос.");
-            }
-
-            const normalized = normalizeForSummary(sourceText).slice(0, SUMMARY_MAX_INPUT_CHARS);
-            const sourceWordCount = countWords(normalized);
-            if (sourceWordCount < SUMMARY_MIN_WORDS) {
-                return "Текст слишком короткий для отдельного пересказа.";
-            }
-
-            const mode = SUMMARY_MODES[modeKey] || SUMMARY_MODES.short;
-            const targetWords = Math.max(SUMMARY_MIN_WORDS, Math.round(sourceWordCount * mode.ratio));
-            const minWords = Math.max(18, Math.round(targetWords * 0.85));
-            const maxWords = Math.max(minWords + 8, Math.round(targetWords * 1.15));
-            const minTokens = Math.max(30, Math.round(minWords * 1.7));
-            const maxTokens = Math.max(minTokens + 12, Math.round(maxWords * 1.7));
-
-            const controller = new AbortController();
-            const timeoutId = window.setTimeout(() => controller.abort(), HF_REQUEST_TIMEOUT_MS);
-            let response;
-            try {
-                response = await fetch(HF_API_URL, {
-                    method: "POST",
-                    mode: "cors",
-                    headers: {
-                        "Authorization": `Bearer ${HF_TOKEN}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        inputs: `Сделай пересказ только по исходному тексту. Не добавляй фактов, которых нет в тексте.\n\nТекст:\n${normalized}`,
-                        parameters: {
-                            min_length: minTokens,
-                            max_length: maxTokens,
-                            do_sample: false,
-                            temperature: 0.1,
-                            top_p: 0.85,
-                            no_repeat_ngram_size: 3
-                        },
-                        options: {
-                            wait_for_model: true,
-                            use_cache: false
-                        }
-                    }),
-                    signal: controller.signal
-                });
-            } catch (error) {
-                if (error?.name === "AbortError") {
-                    throw new Error("Таймаут запроса к Hugging Face. Попробуйте еще раз.");
-                }
-                throw new Error("Сеть/CORS блокирует запрос к Hugging Face. Проверьте запуск через http://localhost и доступ к huggingface.co.");
-            } finally {
-                window.clearTimeout(timeoutId);
-            }
-
-            const payload = await response.json().catch(() => null);
-            if (!response.ok) {
-                const errorText = payload?.error || `HTTP ${response.status}`;
-                throw new Error(errorText);
-            }
-
-            let summary = "";
-            if (Array.isArray(payload) && payload[0]?.summary_text) summary = payload[0].summary_text;
-            else if (Array.isArray(payload) && payload[0]?.generated_text) summary = payload[0].generated_text;
-            else if (payload?.summary_text) summary = payload.summary_text;
-            else if (typeof payload === "string") summary = payload;
-
-            summary = normalizeForSummary(summary);
-            if (!summary) {
-                throw new Error("Пустой ответ модели.");
-            }
-
-            return keepOnlyGroundedSentences(summary, normalized, targetWords, maxWords);
-        }
-
-        function renderSummaryState(message) {
-            const summaryText = contentArea.querySelector("[data-summary-text]");
-            if (summaryText) summaryText.textContent = message;
-        }
-
-        function setSummaryLoading(isLoading) {
-            const toggleButton = contentArea.querySelector("[data-summary-toggle]");
-            const modeButtons = contentArea.querySelectorAll("[data-summary-mode]");
-            if (toggleButton) toggleButton.disabled = isLoading;
-            modeButtons.forEach((button) => {
-                button.disabled = isLoading;
-            });
-        }
-
-        function setSummaryMode(nextMode) {
-            const mode = SUMMARY_MODES[nextMode] ? nextMode : "";
-            currentSummaryMode = mode;
-            const modeButtons = contentArea.querySelectorAll("[data-summary-mode]");
-            const modeSwitch = contentArea.querySelector("[data-summary-switch]");
-
-            modeButtons.forEach((btn) => btn.setAttribute("aria-pressed", String(btn.getAttribute("data-summary-mode") === mode)));
-            if (modeSwitch) modeSwitch.dataset.mode = mode || "none";
-        }
-
-        function setSummaryPanelState(isOpen) {
-            const summaryShell = contentArea.querySelector("[data-summary-shell]");
-            const toggleButton = contentArea.querySelector("[data-summary-toggle]");
-            if (!summaryShell || !toggleButton) return;
-
-            summaryShell.classList.toggle("is-open", isOpen);
-            toggleButton.setAttribute("aria-expanded", String(isOpen));
-        }
-
-        async function requestSummary() {
-            const summaryText = contentArea.querySelector("[data-summary-text]");
-            if (!summaryText) return;
-
-            if (!currentSummarySourceText) {
-                renderSummaryState("Нет текста для пересказа.");
-                return;
-            }
-            if (!currentSummaryMode || !SUMMARY_MODES[currentSummaryMode]) {
-                renderSummaryState("Сначала выберите режим пересказа: «Кратко» или «Подробно».");
-                return;
-            }
-
-            const requestId = ++summaryRequestId;
-            setSummaryLoading(true);
-            renderSummaryState(`Готовим пересказ: ${SUMMARY_MODES[currentSummaryMode].label}...`);
-
-            try {
-                const summary = await fetchSummary(currentSummarySourceText, currentSummaryMode);
-                if (requestId !== summaryRequestId) return;
-                renderSummaryState(summary);
-                summaryText.dataset.loadedMode = currentSummaryMode;
-            } catch (error) {
-                if (requestId !== summaryRequestId) return;
-                renderSummaryState(`Не удалось получить пересказ: ${error.message || "неизвестная ошибка"}`);
-            } finally {
-                if (requestId === summaryRequestId) {
-                    setSummaryLoading(false);
-                }
-            }
-        }
-
-        function attachSummaryHandler() {
-            const toggleButton = contentArea.querySelector("[data-summary-toggle]");
-            const summaryText = contentArea.querySelector("[data-summary-text]");
-            const summaryShell = contentArea.querySelector("[data-summary-shell]");
-            const modeButtons = contentArea.querySelectorAll("[data-summary-mode]");
-            if (!toggleButton || !summaryText || !summaryShell) return;
-
-            modeButtons.forEach((button) => {
-                button.addEventListener("click", () => {
-                    const nextMode = button.getAttribute("data-summary-mode");
-                    if (!nextMode || !SUMMARY_MODES[nextMode]) return;
-                    if (currentSummaryMode === nextMode) return;
-                    setSummaryMode(nextMode);
-
-                    if (summaryShell.classList.contains("is-open")) {
-                        requestSummary();
-                    }
-                });
-            });
-
-            toggleButton.addEventListener("click", () => {
-                const isOpen = !summaryShell.classList.contains("is-open");
-                setSummaryPanelState(isOpen);
-                if (isOpen) {
-                    if (!currentSummaryMode) {
-                        renderSummaryState("Выберите режим: «Кратко» или «Подробно».");
-                        return;
-                    }
-                    const loadedMode = summaryText.dataset.loadedMode || "";
-                    if (loadedMode !== currentSummaryMode) {
-                        requestSummary();
-                    }
-                }
-            });
-        }
-
         function render(items) {
             if (!Number.isInteger(newsId) || newsId < 0) {
                 renderState("Некорректный номер новости.");
@@ -760,48 +621,37 @@
             const dateText = formatDate(item.date || item["Дата"] || "");
             const bodySource = item.content || item.preview || item["Текст"] || "";
             const bodyHtml = buildArticleBody(bodySource);
-            currentSummarySourceText = extractPlainTextForSummary(bodySource);
-            currentSummaryMode = "";
-            summaryRequestId = 0;
 
             contentArea.innerHTML = `
                 <header class="article-header">
                     <span class="article-date">${escapeHtml(dateText)}</span>
                     <h1 class="article-title">${escapeHtml(title)}</h1>
                 </header>
-                <section class="article-summary-shell" data-summary-shell>
-                    <button type="button" class="article-summary-toggle" data-summary-toggle aria-expanded="false" aria-controls="summary-panel">
-                        <span>Пересказ</span>
-                    </button>
-                    <div class="article-summary-panel" id="summary-panel">
-                        <div class="article-summary-panel__inner">
-                            <div class="article-summary-switch" data-summary-switch data-mode="none" role="tablist" aria-label="Режим пересказа">
-                                <button type="button" data-summary-mode="short" aria-pressed="false">Кратко</button>
-                                <button type="button" data-summary-mode="detailed" aria-pressed="false">Подробно</button>
-                            </div>
-                            <p data-summary-text class="article-summary-text">Сначала выберите режим, затем начнется работа модели.</p>
-                        </div>
-                    </div>
-                </section>
                 <div class="article-body">${bodyHtml}</div>
             `;
 
+            const articleBody = contentArea.querySelector(".article-body");
+            transformPullQuoteMarkers(articleBody);
+            normalizeZoomableMedia(articleBody);
+
             document.title = `${title} | Школа Мечты`;
-            setSummaryMode("");
 
             // Инициализация событий для только что созданных картинок
             const images = contentArea.querySelectorAll('.article-inline-img.is-zoomable');
             images.forEach((img) => {
-                img.addEventListener("click", () => setLightboxState(true, img));
+                img.addEventListener("click", (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setLightboxState(true, img);
+                });
                 img.addEventListener("keydown", (event) => {
                     if (event.key === "Enter" || event.key === " ") {
                         event.preventDefault();
+                        event.stopPropagation();
                         setLightboxState(true, img);
                     }
                 });
             });
-
-            attachSummaryHandler();
         }
 
         function loadNews() {
