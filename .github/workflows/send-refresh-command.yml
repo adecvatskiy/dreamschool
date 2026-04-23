@@ -1,0 +1,58 @@
+name: Send Refresh Command To CodeGS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send refresh command to Apps Script
+        run: |
+          set -euo pipefail
+
+          BASE_URL="${{ secrets.APPS_SCRIPT_URL }}"
+          REFRESH_KEY="${{ secrets.REFRESH_COMMAND_KEY }}"
+
+          if [ -z "${BASE_URL}" ]; then
+            echo "APPS_SCRIPT_URL secret is empty."
+            exit 1
+          fi
+          if [ -z "${REFRESH_KEY}" ]; then
+            echo "REFRESH_COMMAND_KEY secret is empty."
+            exit 1
+          fi
+
+          echo "Calling Apps Script endpoint..."
+          HTTP_CODE=$(curl -sS -o response.json -w "%{http_code}" \
+            --get "${BASE_URL}" \
+            --data-urlencode "action=refresh_summaries" \
+            --data-urlencode "key=${REFRESH_KEY}")
+
+          echo "HTTP: ${HTTP_CODE}"
+          echo "Body:"
+          cat response.json
+
+          python - <<'PY'
+          import json
+          import sys
+
+          with open("response.json", "r", encoding="utf-8", errors="replace") as fh:
+              body = fh.read().strip()
+
+          if not body:
+              print("Empty response body.")
+              sys.exit(1)
+
+          try:
+              payload = json.loads(body)
+          except json.JSONDecodeError:
+              print("Response is not JSON. Check Apps Script deployment/access settings.")
+              sys.exit(1)
+
+          if payload.get("ok") is not True:
+              print("Apps Script returned error:", payload.get("error", payload))
+              sys.exit(1)
+
+          print("Dispatch command accepted:", payload)
+          PY
