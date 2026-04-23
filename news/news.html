@@ -104,7 +104,9 @@
 
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbwzhsf0fq5EMIqeaCElq79EYkTqUdNxHW3SD1KfKMUaDGdCM4iZEkcozbzUql7ToaN5Qg/exec";
+        const SUMMARY_DATA_URL = "./news-summaries.json";
         const REQUEST_TIMEOUT_MS = 10000;
+        const SUMMARY_TYPING_STEP_MS = 12;
         const IMAGE_LINK_REGEX = /(https?:\/\/[^\s<>"']+)/gi;
         const IMAGE_EXT_REGEX = /\.(?:png|jpe?g|gif|webp|svg)(?:[?#][^\s]*)?$/i;
         const ALLOWED_CONTENT_TAGS = new Set([
@@ -116,6 +118,7 @@
         const newsId = Number.parseInt(params.get("id"), 10);
         const contentArea = document.getElementById("news-content");
         const backLink = document.getElementById("news-back-link");
+        let summaryPayloadPromise = null;
 
         // --- Логика Лайтбокса ---
         const LIGHTBOX_ANIMATION_MS = 260;
@@ -724,7 +727,220 @@
             contentArea.innerHTML = `<p class="article-state">${escapeHtml(message)}</p>`;
         }
 
-        function render(items) {
+        function loadSummaryPayload() {
+            if (summaryPayloadPromise) return summaryPayloadPromise;
+
+            summaryPayloadPromise = fetch(SUMMARY_DATA_URL, { cache: "no-store" })
+                .then((response) => {
+                    if (!response.ok) return null;
+                    return response.json();
+                })
+                .catch(() => null);
+
+            return summaryPayloadPromise;
+        }
+
+        function readSummaryValue(rawValue, mode = "short") {
+            if (!rawValue) return "";
+            if (typeof rawValue === "string") return rawValue.trim();
+            if (typeof rawValue !== "object") return "";
+
+            if (mode === "detailed") {
+                const detailed = rawValue.detailed_summary || rawValue.detailedSummary || rawValue.long_summary || rawValue.longSummary || "";
+                if (typeof detailed === "string" && detailed.trim()) return detailed.trim();
+            }
+
+            const short = rawValue.summary || rawValue.short_summary || rawValue.shortSummary || rawValue.text || "";
+            if (typeof short === "string") return short.trim();
+            return "";
+        }
+
+        function resolveSummaryObject(item, summaryPayload, index) {
+            const local = {
+                short: readSummaryValue(
+                    item?.summary
+                    || item?.short_summary
+                    || item?.shortSummary
+                    || item?.["Кратко"]
+                    || item?.["Пересказ"],
+                    "short"
+                ),
+                detailed: readSummaryValue(
+                    item?.detailed_summary
+                    || item?.detailedSummary
+                    || item?.long_summary
+                    || item?.longSummary
+                    || item?.["Подробно"],
+                    "detailed"
+                )
+            };
+            if (local.short || local.detailed) return local;
+
+            if (!summaryPayload || typeof summaryPayload !== "object") return local;
+            const summaryItems = summaryPayload.items && typeof summaryPayload.items === "object"
+                ? summaryPayload.items
+                : summaryPayload;
+            if (!summaryItems || typeof summaryItems !== "object") return local;
+
+            const byIndex = summaryItems[String(index)];
+            if (byIndex) {
+                return {
+                    short: readSummaryValue(byIndex, "short"),
+                    detailed: readSummaryValue(byIndex, "detailed")
+                };
+            }
+
+            const itemId = String(item?.id || item?.newsId || item?._id || "").trim();
+            if (itemId && summaryItems[itemId]) {
+                return {
+                    short: readSummaryValue(summaryItems[itemId], "short"),
+                    detailed: readSummaryValue(summaryItems[itemId], "detailed")
+                };
+            }
+
+            return local;
+        }
+
+        function renderSummaryParagraphs(summaryText) {
+            const text = String(summaryText ?? "").trim();
+            if (!text) return "";
+            return escapeHtml(text).replace(/\r\n?/g, "\n").split(/\n{2,}/)
+                .map((part) => `<p>${part.replace(/\n/g, "<br>")}</p>`)
+                .join("");
+        }
+
+        function buildSummaryHtml(summaryData) {
+            const shortText = String(summaryData?.short || "").trim();
+            const detailedText = String(summaryData?.detailed || "").trim();
+            if (!shortText && !detailedText) return "";
+
+            const hasShort = Boolean(shortText);
+            const hasDetailed = Boolean(detailedText);
+            const canChooseMode = hasShort && hasDetailed;
+            const shortDisabled = hasShort ? "" : "disabled";
+            const detailedDisabled = hasDetailed ? "" : "disabled";
+
+            return `
+                <section class="article-summary ai-summary" aria-label="AI пересказ новости" data-ai-summary>
+                    <button class="ai-summary__trigger" type="button" aria-expanded="false" data-ai-toggle>
+                        <span class="ai-summary__trigger-label">AI пересказ</span>
+                        <span class="ai-summary__trigger-icon" aria-hidden="true"></span>
+                    </button>
+                    <div class="ai-summary__panel" data-ai-panel>
+                        <div class="article-view-switch ai-summary__modes" role="group" aria-label="Режим пересказа" data-ai-mode-switch>
+                            <button class="article-view-switch__btn" type="button" data-ai-mode="short" ${shortDisabled}>Краткий</button>
+                            <button class="article-view-switch__btn" type="button" data-ai-mode="detailed" ${detailedDisabled}>Подробный</button>
+                        </div>
+                        <div class="ai-summary__window">
+                            <p class="ai-summary__placeholder" data-ai-placeholder>Выберите режим пересказа</p>
+                            <div class="article-summary__body ai-summary__content" data-ai-content hidden></div>
+                            ${canChooseMode ? "" : `<p class="ai-summary__hint">Доступен один режим пересказа.</p>`}
+                        </div>
+                    </div>
+                </section>
+            `;
+        }
+
+        function bindAiSummary(summaryData) {
+            const root = contentArea.querySelector("[data-ai-summary]");
+            if (!root) return;
+
+            const toggleButton = root.querySelector("[data-ai-toggle]");
+            const panel = root.querySelector("[data-ai-panel]");
+            const modeButtons = Array.from(root.querySelectorAll("[data-ai-mode]"));
+            const placeholder = root.querySelector("[data-ai-placeholder]");
+            const content = root.querySelector("[data-ai-content]");
+
+            const shortText = String(summaryData?.short || "").trim();
+            const detailedText = String(summaryData?.detailed || "").trim();
+            const shortRenderedText = shortText || detailedText;
+            const detailedRenderedText = detailedText || shortText;
+            const hasSelectableModes = Boolean(shortText && detailedText);
+            let renderToken = 0;
+            let typingTimer = 0;
+
+            const stopTyping = () => {
+                window.clearTimeout(typingTimer);
+                if (content) content.classList.remove("is-typing");
+            };
+
+            const typeSummary = (mode) => {
+                const sourceText = mode === "detailed" ? detailedRenderedText : shortRenderedText;
+                const normalized = String(sourceText || "").trim();
+                const safeText = normalized || "Пересказ недоступен.";
+                if (!content) return;
+
+                stopTyping();
+                content.hidden = false;
+                content.textContent = "";
+                content.classList.add("is-typing");
+                if (placeholder) placeholder.hidden = true;
+
+                const token = ++renderToken;
+                let position = 0;
+                const step = () => {
+                    if (token !== renderToken) return;
+                    const nextPosition = Math.min(safeText.length, position + 2);
+                    content.textContent = safeText.slice(0, nextPosition);
+                    position = nextPosition;
+
+                    if (position < safeText.length) {
+                        typingTimer = window.setTimeout(step, SUMMARY_TYPING_STEP_MS);
+                    } else {
+                        content.classList.remove("is-typing");
+                    }
+                };
+
+                step();
+            };
+
+            const markActiveModeButton = (mode) => {
+                modeButtons.forEach((button) => {
+                    const isActive = button.getAttribute("data-ai-mode") === mode;
+                    button.classList.toggle("is-active", isActive);
+                    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+                });
+            };
+
+            const triggerMode = (mode) => {
+                markActiveModeButton(mode);
+                typeSummary(mode);
+            };
+
+            if (toggleButton && panel) {
+                toggleButton.addEventListener("click", () => {
+                    const isOpen = root.classList.toggle("is-open");
+                    toggleButton.setAttribute("aria-expanded", isOpen ? "true" : "false");
+                    if (!isOpen) {
+                        panel.scrollTop = 0;
+                    }
+                });
+            }
+
+            modeButtons.forEach((button) => {
+                if (button.disabled) return;
+                button.addEventListener("click", () => {
+                    const mode = button.getAttribute("data-ai-mode");
+                    if (!mode) return;
+                    triggerMode(mode);
+                });
+            });
+
+            modeButtons.forEach((button) => {
+                button.setAttribute("aria-pressed", "false");
+            });
+
+            if (!hasSelectableModes) {
+                const singleMode = shortText ? "short" : (detailedText ? "detailed" : "");
+                if (singleMode) {
+                    const singleButton = root.querySelector(`[data-ai-mode="${singleMode}"]`);
+                    singleButton?.classList.add("is-active");
+                    singleButton?.setAttribute("aria-pressed", "true");
+                }
+            }
+        }
+
+        function render(items, summaryPayload = null) {
             if (!Number.isInteger(newsId) || newsId < 0) {
                 renderState("Некорректный номер новости.");
                 return;
@@ -740,12 +956,15 @@
             const dateText = formatDate(item.date || item["Дата"] || "");
             const bodySource = item.content || item.preview || item["Текст"] || "";
             const bodyHtml = buildArticleBody(bodySource);
+            const summaryData = resolveSummaryObject(item, summaryPayload, newsId);
+            const summaryHtml = buildSummaryHtml(summaryData);
 
             contentArea.innerHTML = `
                 <header class="article-header">
                     <span class="article-date">${escapeHtml(dateText)}</span>
                     <h1 class="article-title">${escapeHtml(title)}</h1>
                 </header>
+                ${summaryHtml}
                 <div class="article-body">${bodyHtml}</div>
             `;
 
@@ -755,11 +974,13 @@
             const articleImages = extractArticleImages(articleBody);
             renderArticleGallery(articleBody, articleImages);
             bindZoomableImages(contentArea);
+            bindAiSummary(summaryData);
 
             document.title = `${title} | Школа Мечты`;
         }
 
-        function loadNews() {
+        async function loadNews() {
+            const summaryPayload = await loadSummaryPayload();
             const callbackName = `newsDetailCallback_${Date.now()}`;
             const script = document.createElement("script");
             let settled = false;
@@ -780,7 +1001,7 @@
                 if (settled) return;
                 settled = true;
                 window.clearTimeout(timeoutId);
-                render(data);
+                render(data, summaryPayload);
                 cleanup();
             };
 

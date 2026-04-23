@@ -1,3 +1,4 @@
+﻿
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -192,55 +193,36 @@
                 .replace(/'/g, "&#39;");
         }
 
-        function getSafeDate(dateValue) {
-            if (!dateValue) return new Date(NaN);
-            const text = String(dateValue).trim();
-            if (!text) return new Date(NaN);
-
-            // 1. Формат DD.MM.YYYY
-            const ruDateMatch = text.match(/^(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{2,4})/);
-            if (ruDateMatch) {
-                const day = Number.parseInt(ruDateMatch[1], 10);
-                const month = Number.parseInt(ruDateMatch[2], 10) - 1;
-                let year = Number.parseInt(ruDateMatch[3], 10);
-                if (year < 100) year += 2000;
-                return new Date(year, month, day);
-            }
-
-            // 2. Формат YYYY-MM-DD (чтобы дата не съезжала при UTC-парсинге)
-            if (text.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                const parts = text.split("-");
-                return new Date(parts[0], parts[1] - 1, parts[2]);
-            }
-
-            // 3. ISO формат из Google Sheets Apps Script
-            // Из-за часовых поясов дата может смещаться на предыдущий день (например, 21:00 UTC).
-            // Добавляем 12 часов, чтобы безопасно центрировать дату в нужном дне.
-            let date = new Date(dateValue);
-            if (!Number.isNaN(date.getTime()) && text.includes("T") && text.endsWith("Z")) {
-                date = new Date(date.getTime() + 12 * 60 * 60 * 1000);
-            }
-
-            return date;
-        }
-
         function splitDate(dateValue) {
             if (!dateValue) return { day: "", rest: "" };
-            const date = getSafeDate(dateValue);
-
+            const date = new Date(dateValue);
             if (!Number.isNaN(date.getTime())) {
                 const day = String(date.getDate()).padStart(2, "0");
                 const rest = date.toLocaleDateString("ru-RU", { month: "long", year: "numeric" });
                 return { day, rest };
             }
-
             const parts = String(dateValue).trim().split(/\s+/);
             return { day: parts.shift() || "", rest: parts.join(" ") || "" };
         }
 
         function parseNewsDateToTimestamp(dateValue) {
-            const date = getSafeDate(dateValue);
-            if (!Number.isNaN(date.getTime())) return date.getTime();
+            if (!dateValue) return Number.POSITIVE_INFINITY;
+            const text = String(dateValue).trim();
+            if (!text) return Number.POSITIVE_INFINITY;
+
+            const directDate = new Date(text);
+            if (!Number.isNaN(directDate.getTime())) return directDate.getTime();
+
+            const ruDateMatch = text.match(/^(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{2,4})$/);
+            if (ruDateMatch) {
+                const day = Number.parseInt(ruDateMatch[1], 10);
+                const month = Number.parseInt(ruDateMatch[2], 10) - 1;
+                let year = Number.parseInt(ruDateMatch[3], 10);
+                if (year < 100) year += 2000;
+                const fallbackDate = new Date(year, month, day);
+                if (!Number.isNaN(fallbackDate.getTime())) return fallbackDate.getTime();
+            }
+
             return Number.POSITIVE_INFINITY;
         }
 
@@ -535,3 +517,6 @@
     </script>
 </body>
 </html>
+
+
+
