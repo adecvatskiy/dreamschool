@@ -1,0 +1,16 @@
+name: Send Refresh Command To CodeGS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send refresh command to Apps Script
+        run: |
+          URL="${{ secrets.APPS_SCRIPT_URL }}?action=refresh_summaries&key=${{ secrets.REFRESH_COMMAND_KEY }}"
+          echo "Calling Apps Script endpoint..."
+          RESP=$(curl -fsS "$URL")
+          echo "Response: $RESP"
+          echo "$RESP" | jq -e '.ok == true'
