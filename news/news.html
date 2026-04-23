@@ -106,8 +106,8 @@
         const API_URL = "https://script.google.com/macros/s/AKfycbwzhsf0fq5EMIqeaCElq79EYkTqUdNxHW3SD1KfKMUaDGdCM4iZEkcozbzUql7ToaN5Qg/exec";
         const SUMMARY_DATA_URL = "./news-summaries.json";
         const REQUEST_TIMEOUT_MS = 10000;
-        const SUMMARY_TYPING_STEP_MS = 12;
-        const REFRESH_REQUEST_TIMEOUT_MS = 20000;
+        const SUMMARY_PRELOAD_MS = 520;
+        const SUMMARY_WORD_STEP_MS = 42;
         const IMAGE_LINK_REGEX = /(https?:\/\/[^\s<>"']+)/gi;
         const IMAGE_EXT_REGEX = /\.(?:png|jpe?g|gif|webp|svg)(?:[?#][^\s]*)?$/i;
         const ALLOWED_CONTENT_TAGS = new Set([
@@ -813,6 +813,7 @@
         function buildSummaryHtml(summaryData) {
             const shortText = String(summaryData?.short || "").trim();
             const detailedText = String(summaryData?.detailed || "").trim();
+            if (!shortText && !detailedText) return "";
 
             const hasShort = Boolean(shortText);
             const hasDetailed = Boolean(detailedText);
@@ -831,9 +832,9 @@
                             <button class="article-view-switch__btn" type="button" data-ai-mode="short" ${shortDisabled}>Краткий</button>
                             <button class="article-view-switch__btn" type="button" data-ai-mode="detailed" ${detailedDisabled}>Подробный</button>
                         </div>
-                        <button class="ai-summary__refresh" type="button" data-ai-refresh>Обновить пересказы</button>
                         <div class="ai-summary__window">
                             <p class="ai-summary__placeholder" data-ai-placeholder>Выберите режим пересказа</p>
+                            <p class="ai-summary__loading loading-dots" data-ai-loading hidden>Готовим пересказ</p>
                             <div class="article-summary__body ai-summary__content" data-ai-content hidden></div>
                             ${canChooseMode ? "" : `<p class="ai-summary__hint">Доступен один режим пересказа.</p>`}
                         </div>
@@ -849,8 +850,8 @@
             const toggleButton = root.querySelector("[data-ai-toggle]");
             const panel = root.querySelector("[data-ai-panel]");
             const modeButtons = Array.from(root.querySelectorAll("[data-ai-mode]"));
-            const refreshButton = root.querySelector("[data-ai-refresh]");
             const placeholder = root.querySelector("[data-ai-placeholder]");
+            const loading = root.querySelector("[data-ai-loading]");
             const content = root.querySelector("[data-ai-content]");
 
             const shortText = String(summaryData?.short || "").trim();
@@ -864,19 +865,20 @@
             if (!cache.detailed && cache.short) cache.detailed = cache.short;
 
             const hasSelectableModes = Boolean(cache.short && cache.detailed && cache.short !== cache.detailed);
-            let selectedMode = "";
             let renderToken = 0;
             let typingTimer = 0;
 
             const stopTyping = () => {
                 window.clearTimeout(typingTimer);
                 if (content) content.classList.remove("is-typing");
+                if (loading) loading.hidden = true;
             };
 
             const setPlaceholder = (text) => {
                 if (!placeholder) return;
                 placeholder.textContent = text;
                 placeholder.hidden = false;
+                if (loading) loading.hidden = true;
                 if (content) content.hidden = true;
                 if (content) content.textContent = "";
             };
@@ -888,71 +890,34 @@
                 if (!content) return;
 
                 stopTyping();
-                content.hidden = false;
+                const token = ++renderToken;
+                const words = safeText.split(/\s+/).filter(Boolean);
+                let position = 0;
+
+                if (placeholder) placeholder.hidden = true;
+                if (loading) loading.hidden = false;
+                content.hidden = true;
                 content.textContent = "";
                 content.classList.add("is-typing");
-                if (placeholder) placeholder.hidden = true;
-
-                const token = ++renderToken;
-                let position = 0;
                 const step = () => {
                     if (token !== renderToken) return;
-                    const nextPosition = Math.min(safeText.length, position + 2);
-                    content.textContent = safeText.slice(0, nextPosition);
+                    const nextPosition = Math.min(words.length, position + 1);
+                    content.textContent = words.slice(0, nextPosition).join(" ");
                     position = nextPosition;
 
-                    if (position < safeText.length) {
-                        typingTimer = window.setTimeout(step, SUMMARY_TYPING_STEP_MS);
+                    if (position < words.length) {
+                        typingTimer = window.setTimeout(step, SUMMARY_WORD_STEP_MS);
                     } else {
                         content.classList.remove("is-typing");
                     }
                 };
 
-                step();
-            };
-
-            const requestRefresh = (secretKey) => {
-                return new Promise((resolve, reject) => {
-                    const callbackName = `newsRefreshCallback_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-                    const script = document.createElement("script");
-                    let settled = false;
-
-                    const cleanup = () => {
-                        delete window[callbackName];
-                        script.remove();
-                    };
-
-                    const timeoutId = window.setTimeout(() => {
-                        if (settled) return;
-                        settled = true;
-                        cleanup();
-                        reject(new Error("timeout"));
-                    }, REFRESH_REQUEST_TIMEOUT_MS);
-
-                    window[callbackName] = (payload) => {
-                        if (settled) return;
-                        settled = true;
-                        window.clearTimeout(timeoutId);
-                        cleanup();
-
-                        if (payload && payload.ok) {
-                            resolve(payload);
-                            return;
-                        }
-                        reject(new Error(payload?.error || "empty"));
-                    };
-
-                    script.onerror = () => {
-                        if (settled) return;
-                        settled = true;
-                        window.clearTimeout(timeoutId);
-                        cleanup();
-                        reject(new Error("network"));
-                    };
-
-                    script.src = `${API_URL}?action=refresh_summaries&key=${encodeURIComponent(secretKey)}&callback=${callbackName}&_=${Date.now()}`;
-                    document.body.appendChild(script);
-                });
+                typingTimer = window.setTimeout(() => {
+                    if (token !== renderToken) return;
+                    if (loading) loading.hidden = true;
+                    content.hidden = false;
+                    step();
+                }, SUMMARY_PRELOAD_MS);
             };
 
             const markActiveModeButton = (mode) => {
@@ -965,7 +930,6 @@
 
             const selectMode = (mode) => {
                 markActiveModeButton(mode);
-                selectedMode = mode;
                 const cachedText = mode === "detailed" ? cache.detailed : cache.short;
                 if (cachedText) {
                     typeSummary(mode);
@@ -1004,29 +968,7 @@
                     const singleButton = root.querySelector(`[data-ai-mode="${singleMode}"]`);
                     singleButton?.classList.add("is-active");
                     singleButton?.setAttribute("aria-pressed", "true");
-                    selectedMode = singleMode;
                 }
-            }
-
-            if (refreshButton) {
-                refreshButton.addEventListener("click", async () => {
-                    const key = window.prompt("Ключ обновления:");
-                    if (!key) return;
-
-                    refreshButton.disabled = true;
-                    refreshButton.classList.add("is-busy");
-                    setPlaceholder("Отправляем команду на обновление...");
-
-                    try {
-                        await requestRefresh(key.trim());
-                        setPlaceholder("Команда отправлена. Пересказы обновятся после выполнения workflow.");
-                    } catch {
-                        setPlaceholder("Не удалось отправить команду. Проверьте ключ и повторите.");
-                    } finally {
-                        refreshButton.disabled = false;
-                        refreshButton.classList.remove("is-busy");
-                    }
-                });
             }
         }
 
