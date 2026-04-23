@@ -107,6 +107,7 @@
         const SUMMARY_DATA_URL = "./news-summaries.json";
         const REQUEST_TIMEOUT_MS = 10000;
         const SUMMARY_TYPING_STEP_MS = 12;
+        const SUMMARY_REQUEST_TIMEOUT_MS = 45000;
         const IMAGE_LINK_REGEX = /(https?:\/\/[^\s<>"']+)/gi;
         const IMAGE_EXT_REGEX = /\.(?:png|jpe?g|gif|webp|svg)(?:[?#][^\s]*)?$/i;
         const ALLOWED_CONTENT_TAGS = new Set([
@@ -812,7 +813,6 @@
         function buildSummaryHtml(summaryData) {
             const shortText = String(summaryData?.short || "").trim();
             const detailedText = String(summaryData?.detailed || "").trim();
-            if (!shortText && !detailedText) return "";
 
             const hasShort = Boolean(shortText);
             const hasDetailed = Boolean(detailedText);
@@ -831,6 +831,7 @@
                             <button class="article-view-switch__btn" type="button" data-ai-mode="short" ${shortDisabled}>Краткий</button>
                             <button class="article-view-switch__btn" type="button" data-ai-mode="detailed" ${detailedDisabled}>Подробный</button>
                         </div>
+                        <button class="ai-summary__compose" type="button" data-ai-compose>Составить ИИ пересказ</button>
                         <div class="ai-summary__window">
                             <p class="ai-summary__placeholder" data-ai-placeholder>Выберите режим пересказа</p>
                             <div class="article-summary__body ai-summary__content" data-ai-content hidden></div>
@@ -848,14 +849,22 @@
             const toggleButton = root.querySelector("[data-ai-toggle]");
             const panel = root.querySelector("[data-ai-panel]");
             const modeButtons = Array.from(root.querySelectorAll("[data-ai-mode]"));
+            const composeButton = root.querySelector("[data-ai-compose]");
             const placeholder = root.querySelector("[data-ai-placeholder]");
             const content = root.querySelector("[data-ai-content]");
 
             const shortText = String(summaryData?.short || "").trim();
             const detailedText = String(summaryData?.detailed || "").trim();
-            const shortRenderedText = shortText || detailedText;
-            const detailedRenderedText = detailedText || shortText;
-            const hasSelectableModes = Boolean(shortText && detailedText);
+            const cache = {
+                short: shortText || "",
+                detailed: detailedText || ""
+            };
+
+            if (!cache.short && cache.detailed) cache.short = cache.detailed;
+            if (!cache.detailed && cache.short) cache.detailed = cache.short;
+
+            const hasSelectableModes = Boolean(cache.short && cache.detailed && cache.short !== cache.detailed);
+            let selectedMode = "";
             let renderToken = 0;
             let typingTimer = 0;
 
@@ -864,8 +873,16 @@
                 if (content) content.classList.remove("is-typing");
             };
 
+            const setPlaceholder = (text) => {
+                if (!placeholder) return;
+                placeholder.textContent = text;
+                placeholder.hidden = false;
+                if (content) content.hidden = true;
+                if (content) content.textContent = "";
+            };
+
             const typeSummary = (mode) => {
-                const sourceText = mode === "detailed" ? detailedRenderedText : shortRenderedText;
+                const sourceText = mode === "detailed" ? cache.detailed : cache.short;
                 const normalized = String(sourceText || "").trim();
                 const safeText = normalized || "Пересказ недоступен.";
                 if (!content) return;
@@ -894,6 +911,50 @@
                 step();
             };
 
+            const loadSummaryFromApi = (mode) => {
+                return new Promise((resolve, reject) => {
+                    const callbackName = `newsSummaryCallback_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+                    const script = document.createElement("script");
+                    let settled = false;
+
+                    const cleanup = () => {
+                        delete window[callbackName];
+                        script.remove();
+                    };
+
+                    const timeoutId = window.setTimeout(() => {
+                        if (settled) return;
+                        settled = true;
+                        cleanup();
+                        reject(new Error("timeout"));
+                    }, SUMMARY_REQUEST_TIMEOUT_MS);
+
+                    window[callbackName] = (payload) => {
+                        if (settled) return;
+                        settled = true;
+                        window.clearTimeout(timeoutId);
+                        cleanup();
+
+                        if (payload && payload.ok && payload.summary) {
+                            resolve(String(payload.summary).trim());
+                            return;
+                        }
+                        reject(new Error(payload?.error || "empty"));
+                    };
+
+                    script.onerror = () => {
+                        if (settled) return;
+                        settled = true;
+                        window.clearTimeout(timeoutId);
+                        cleanup();
+                        reject(new Error("network"));
+                    };
+
+                    script.src = `${API_URL}?action=summarize&id=${newsId}&mode=${encodeURIComponent(mode)}&callback=${callbackName}&_=${Date.now()}`;
+                    document.body.appendChild(script);
+                });
+            };
+
             const markActiveModeButton = (mode) => {
                 modeButtons.forEach((button) => {
                     const isActive = button.getAttribute("data-ai-mode") === mode;
@@ -902,9 +963,16 @@
                 });
             };
 
-            const triggerMode = (mode) => {
+            const selectMode = (mode) => {
                 markActiveModeButton(mode);
-                typeSummary(mode);
+                selectedMode = mode;
+                const cachedText = mode === "detailed" ? cache.detailed : cache.short;
+                if (cachedText) {
+                    typeSummary(mode);
+                } else {
+                    stopTyping();
+                    setPlaceholder("Выберите режим пересказа и нажмите «Составить ИИ пересказ»");
+                }
             };
 
             if (toggleButton && panel) {
@@ -922,7 +990,7 @@
                 button.addEventListener("click", () => {
                     const mode = button.getAttribute("data-ai-mode");
                     if (!mode) return;
-                    triggerMode(mode);
+                    selectMode(mode);
                 });
             });
 
@@ -931,12 +999,38 @@
             });
 
             if (!hasSelectableModes) {
-                const singleMode = shortText ? "short" : (detailedText ? "detailed" : "");
+                const singleMode = cache.short ? "short" : (cache.detailed ? "detailed" : "");
                 if (singleMode) {
                     const singleButton = root.querySelector(`[data-ai-mode="${singleMode}"]`);
                     singleButton?.classList.add("is-active");
                     singleButton?.setAttribute("aria-pressed", "true");
+                    selectedMode = singleMode;
                 }
+            }
+
+            if (composeButton) {
+                composeButton.addEventListener("click", async () => {
+                    if (!selectedMode) {
+                        setPlaceholder("Выберите режим пересказа");
+                        return;
+                    }
+
+                    composeButton.disabled = true;
+                    composeButton.classList.add("is-busy");
+                    setPlaceholder("Составляем пересказ...");
+
+                    try {
+                        const generated = await loadSummaryFromApi(selectedMode);
+                        if (selectedMode === "detailed") cache.detailed = generated;
+                        else cache.short = generated;
+                        typeSummary(selectedMode);
+                    } catch {
+                        setPlaceholder("Не удалось составить пересказ. Попробуйте ещё раз.");
+                    } finally {
+                        composeButton.disabled = false;
+                        composeButton.classList.remove("is-busy");
+                    }
+                });
             }
         }
 
