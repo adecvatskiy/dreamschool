@@ -2370,7 +2370,7 @@ h1, h2, h3, .logo-text {
     margin-bottom: 10px;
 }
 
-.ai-summary__compose {
+.ai-summary__refresh {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -2387,15 +2387,15 @@ h1, h2, h3, .logo-text {
     margin-bottom: 10px;
 }
 
-.ai-summary__compose:hover,
-.ai-summary__compose:focus-visible {
+.ai-summary__refresh:hover,
+.ai-summary__refresh:focus-visible {
     border-color: var(--theme-accent);
     color: var(--theme-accent-strong);
     background: color-mix(in srgb, var(--theme-accent) 14%, var(--theme-surface));
 }
 
-.ai-summary__compose:disabled,
-.ai-summary__compose.is-busy {
+.ai-summary__refresh:disabled,
+.ai-summary__refresh.is-busy {
     opacity: 0.65;
     cursor: wait;
 }

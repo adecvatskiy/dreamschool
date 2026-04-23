@@ -107,7 +107,7 @@
         const SUMMARY_DATA_URL = "./news-summaries.json";
         const REQUEST_TIMEOUT_MS = 10000;
         const SUMMARY_TYPING_STEP_MS = 12;
-        const SUMMARY_REQUEST_TIMEOUT_MS = 45000;
+        const REFRESH_REQUEST_TIMEOUT_MS = 20000;
         const IMAGE_LINK_REGEX = /(https?:\/\/[^\s<>"']+)/gi;
         const IMAGE_EXT_REGEX = /\.(?:png|jpe?g|gif|webp|svg)(?:[?#][^\s]*)?$/i;
         const ALLOWED_CONTENT_TAGS = new Set([
@@ -831,7 +831,7 @@
                             <button class="article-view-switch__btn" type="button" data-ai-mode="short" ${shortDisabled}>Краткий</button>
                             <button class="article-view-switch__btn" type="button" data-ai-mode="detailed" ${detailedDisabled}>Подробный</button>
                         </div>
-                        <button class="ai-summary__compose" type="button" data-ai-compose>Составить ИИ пересказ</button>
+                        <button class="ai-summary__refresh" type="button" data-ai-refresh>Обновить пересказы</button>
                         <div class="ai-summary__window">
                             <p class="ai-summary__placeholder" data-ai-placeholder>Выберите режим пересказа</p>
                             <div class="article-summary__body ai-summary__content" data-ai-content hidden></div>
@@ -849,7 +849,7 @@
             const toggleButton = root.querySelector("[data-ai-toggle]");
             const panel = root.querySelector("[data-ai-panel]");
             const modeButtons = Array.from(root.querySelectorAll("[data-ai-mode]"));
-            const composeButton = root.querySelector("[data-ai-compose]");
+            const refreshButton = root.querySelector("[data-ai-refresh]");
             const placeholder = root.querySelector("[data-ai-placeholder]");
             const content = root.querySelector("[data-ai-content]");
 
@@ -911,9 +911,9 @@
                 step();
             };
 
-            const loadSummaryFromApi = (mode) => {
+            const requestRefresh = (secretKey) => {
                 return new Promise((resolve, reject) => {
-                    const callbackName = `newsSummaryCallback_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+                    const callbackName = `newsRefreshCallback_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
                     const script = document.createElement("script");
                     let settled = false;
 
@@ -927,7 +927,7 @@
                         settled = true;
                         cleanup();
                         reject(new Error("timeout"));
-                    }, SUMMARY_REQUEST_TIMEOUT_MS);
+                    }, REFRESH_REQUEST_TIMEOUT_MS);
 
                     window[callbackName] = (payload) => {
                         if (settled) return;
@@ -935,8 +935,8 @@
                         window.clearTimeout(timeoutId);
                         cleanup();
 
-                        if (payload && payload.ok && payload.summary) {
-                            resolve(String(payload.summary).trim());
+                        if (payload && payload.ok) {
+                            resolve(payload);
                             return;
                         }
                         reject(new Error(payload?.error || "empty"));
@@ -950,7 +950,7 @@
                         reject(new Error("network"));
                     };
 
-                    script.src = `${API_URL}?action=summarize&id=${newsId}&mode=${encodeURIComponent(mode)}&callback=${callbackName}&_=${Date.now()}`;
+                    script.src = `${API_URL}?action=refresh_summaries&key=${encodeURIComponent(secretKey)}&callback=${callbackName}&_=${Date.now()}`;
                     document.body.appendChild(script);
                 });
             };
@@ -971,7 +971,7 @@
                     typeSummary(mode);
                 } else {
                     stopTyping();
-                    setPlaceholder("Выберите режим пересказа и нажмите «Составить ИИ пересказ»");
+                    setPlaceholder("Выберите режим пересказа");
                 }
             };
 
@@ -1008,27 +1008,23 @@
                 }
             }
 
-            if (composeButton) {
-                composeButton.addEventListener("click", async () => {
-                    if (!selectedMode) {
-                        setPlaceholder("Выберите режим пересказа");
-                        return;
-                    }
+            if (refreshButton) {
+                refreshButton.addEventListener("click", async () => {
+                    const key = window.prompt("Ключ обновления:");
+                    if (!key) return;
 
-                    composeButton.disabled = true;
-                    composeButton.classList.add("is-busy");
-                    setPlaceholder("Составляем пересказ...");
+                    refreshButton.disabled = true;
+                    refreshButton.classList.add("is-busy");
+                    setPlaceholder("Отправляем команду на обновление...");
 
                     try {
-                        const generated = await loadSummaryFromApi(selectedMode);
-                        if (selectedMode === "detailed") cache.detailed = generated;
-                        else cache.short = generated;
-                        typeSummary(selectedMode);
+                        await requestRefresh(key.trim());
+                        setPlaceholder("Команда отправлена. Пересказы обновятся после выполнения workflow.");
                     } catch {
-                        setPlaceholder("Не удалось составить пересказ. Попробуйте ещё раз.");
+                        setPlaceholder("Не удалось отправить команду. Проверьте ключ и повторите.");
                     } finally {
-                        composeButton.disabled = false;
-                        composeButton.classList.remove("is-busy");
+                        refreshButton.disabled = false;
+                        refreshButton.classList.remove("is-busy");
                     }
                 });
             }

@@ -15,6 +15,10 @@ function doGet(e) {
     const out = summarizeById_(e);
     return respond_(out, callback);
   }
+  if (action === 'refresh_summaries') {
+    const out = refreshSummaries_(e);
+    return respond_(out, callback);
+  }
 
   const data = getNewsData_();
   return respond_(data, callback);
@@ -378,5 +382,27 @@ function dispatchPreviewUpdated_(payload) {
   const code = response.getResponseCode();
   if (code < 200 || code >= 300) {
     throw new Error('GitHub dispatch failed (' + code + '): ' + response.getContentText());
+  }
+}
+
+function refreshSummaries_(e) {
+  const expectedKey = String(PropertiesService.getScriptProperties().getProperty('REFRESH_COMMAND_KEY') || '').trim();
+  if (!expectedKey) {
+    return { ok: false, error: 'REFRESH_COMMAND_KEY not set' };
+  }
+
+  const providedKey = String((e && e.parameter && e.parameter.key) || '').trim();
+  if (!providedKey || providedKey !== expectedKey) {
+    return { ok: false, error: 'Invalid key' };
+  }
+
+  try {
+    dispatchPreviewUpdated_({
+      source: 'manual_command',
+      ts: new Date().toISOString()
+    });
+    return { ok: true, message: 'Dispatch sent' };
+  } catch (err) {
+    return { ok: false, error: String(err && err.message ? err.message : err) };
   }
 }
