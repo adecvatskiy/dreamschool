@@ -151,6 +151,97 @@ def finalize_summary_text(raw_text: str, fallback_text: str = "") -> str:
     return text
 
 
+def count_words(text: str) -> int:
+    return len([part for part in SPACE_RE.split(str(text or "").strip()) if part])
+
+
+def dedupe_sentences(sentences: list[str]) -> list[str]:
+    seen: set[str] = set()
+    output: list[str] = []
+    for sentence in sentences:
+        key = SPACE_RE.sub(" ", sentence).strip().casefold()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        output.append(sentence.strip())
+    return output
+
+
+def sentence_quality(sentence: str) -> float:
+    text = sentence.strip()
+    if not text:
+        return -100.0
+
+    words = count_words(text)
+    score = min(words, 18)
+    if words < 4:
+        score -= 8
+    if ":" in text[:40]:
+        score -= 3
+    if text.count('"') >= 2 or text.count("В«") >= 2:
+        score -= 2
+    if len(text) > 260:
+        score -= 2
+    if re.search(r"[A-Za-z]{8,}", text):
+        score -= 1
+    return score
+
+
+def choose_fallback_sentences(sentences: list[str], *, detail_level: str) -> list[str]:
+    clean_sentences = dedupe_sentences([finalize_summary_text(sentence) for sentence in sentences])
+    if not clean_sentences:
+        return []
+
+    target_count = 6 if detail_level == "detailed" else 4
+    target_positions = (
+        [0.0, 0.18, 0.38, 0.58, 0.78, 1.0]
+        if detail_level == "detailed"
+        else [0.0, 0.33, 0.66, 1.0]
+    )
+
+    selected_indexes: list[int] = []
+    total = len(clean_sentences)
+    for position in target_positions:
+        approx = round((total - 1) * position)
+        search_order = sorted(
+            range(total),
+            key=lambda idx: (abs(idx - approx), -sentence_quality(clean_sentences[idx])),
+        )
+        for idx in search_order:
+            if idx in selected_indexes:
+                continue
+            if sentence_quality(clean_sentences[idx]) < 1:
+                continue
+            selected_indexes.append(idx)
+            break
+        if len(selected_indexes) >= target_count:
+            break
+
+    if 0 not in selected_indexes:
+        selected_indexes.append(0)
+
+    return [clean_sentences[idx] for idx in sorted(set(selected_indexes))][:target_count]
+
+
+def looks_like_coherent_summary(text: str, *, detail_level: str) -> bool:
+    normalized = finalize_summary_text(text)
+    if not normalized:
+        return False
+
+    sentences = dedupe_sentences(split_sentences(normalized))
+    word_count = count_words(normalized)
+    min_sentences = 5 if detail_level == "detailed" else 3
+    min_words = 55 if detail_level == "detailed" else 24
+
+    if len(sentences) < min_sentences or word_count < min_words:
+        return False
+    if any(count_words(sentence) < 3 for sentence in sentences[: min(2, len(sentences))]):
+        return False
+    if sum(1 for sentence in sentences if count_words(sentence) < 5) > max(1, len(sentences) // 2):
+        return False
+    return True
+
+
 def pick_positions(total: int, count: int) -> list[int]:
     if total <= 0 or count <= 0:
         return []
@@ -186,17 +277,17 @@ def fallback_summary(text: str, *, detail_level: str) -> str:
 
     if detail_level == "detailed":
         max_chars = 920
-        sentence_count = 7
     else:
         max_chars = 420
-        sentence_count = 4
 
     sentences = split_sentences(normalized)
     if not sentences:
         clipped = normalized[:max_chars].rsplit(" ", 1)[0].strip()
         return finalize_summary_text(clipped, normalized)
 
-    selected = [sentences[i] for i in pick_positions(len(sentences), sentence_count)]
+    selected = choose_fallback_sentences(sentences, detail_level=detail_level)
+    if not selected:
+        selected = [sentences[i] for i in pick_positions(len(sentences), 6 if detail_level == "detailed" else 4)]
     selected = apply_connectors(selected)
     summary = " ".join(selected).strip()
 
@@ -282,8 +373,8 @@ def build_coverage_source(text: str, model: str, token: str) -> str:
     total_chunks = len(chunks)
     for idx, chunk in enumerate(chunks, start=1):
         prompt = (
-            "Summarize this fragment of a school news article in Russian with 1-2 factual "
-            "sentences, keep chronology, no lists.\n\n"
+            "Retell this fragment of a school news article in Russian using 1-2 connected factual "
+            "sentences. Preserve chronology, do not use lists, and do not invent details.\n\n"
             f"Fragment {idx} of {total_chunks}:\n{chunk}\n\nSummary:"
         )
         part = call_hf_inference(prompt, model, token, max_new_tokens=120)
@@ -298,25 +389,33 @@ def build_coverage_source(text: str, model: str, token: str) -> str:
 
 def generate_hf_summary_pair(text: str, model: str, token: str) -> tuple[str, str]:
     source = build_coverage_source(text, model, token)
+    short_fallback = fallback_summary(text, detail_level="short")
+    detailed_fallback = fallback_summary(text, detail_level="detailed")
 
     short_prompt = (
-        "Write a coherent short retelling in Russian (3-4 sentences) from this school news "
-        "material. Use one paragraph, factual tone, no list formatting, and smooth transitions "
-        "between sentences.\n\n"
+        "Write a coherent retelling in Russian based only on this school news material. Produce "
+        "one complete paragraph of 3-4 full sentences. The result must read like a short finished "
+        "text, not like notes or separate fragments. Preserve the factual meaning and event order. "
+        "Do not use lists, headings, quotes-only lines, or add details that are absent from the source.\n\n"
         f"{source}\n\nShort retelling:"
     )
     detailed_prompt = (
-        "Write a coherent detailed retelling in Russian (6-8 sentences) from this school news "
-        "material. Use one paragraph, factual tone, no list formatting, keep event order and smooth "
-        "transitions.\n\n"
+        "Write a coherent detailed retelling in Russian based only on this school news material. "
+        "Produce one complete paragraph of 6-8 full sentences. The paragraph must have logical flow, "
+        "clear links between sentences, and preserve chronology. Do not use lists, headings, quotes-only "
+        "lines, or add details that are absent from the source.\n\n"
         f"{source}\n\nDetailed retelling:"
     )
 
     short_raw = call_hf_inference(short_prompt, model, token, max_new_tokens=240)
     detailed_raw = call_hf_inference(detailed_prompt, model, token, max_new_tokens=460)
 
-    short = finalize_summary_text(short_raw, fallback_summary(text, detail_level="short"))
-    detailed = finalize_summary_text(detailed_raw, fallback_summary(text, detail_level="detailed"))
+    short = finalize_summary_text(short_raw, short_fallback)
+    detailed = finalize_summary_text(detailed_raw, detailed_fallback)
+    if not looks_like_coherent_summary(short, detail_level="short"):
+        short = short_fallback
+    if not looks_like_coherent_summary(detailed, detail_level="detailed"):
+        detailed = detailed_fallback
     return short, detailed
 
 
